@@ -1,0 +1,222 @@
+/* Main container */
+.admin-login-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  flex-direction: row-reverse;
+}
+
+/* Left panel - Branding (green side) */
+.admin-login-left-panel {
+  width: 50%;
+  height: 100%;
+  background-color: #04530F   ;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Right panel - Form (white side) */
+.admin-login-right-panel {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #E8F5E8 ;
+  position: relative;
+}
+
+/* Form container */
+.admin-login-form-container {
+  width: 90%;
+  max-width: 450px;
+  padding: 40px;
+  border-radius: 1.5rem;
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* Branding text */
+.admin-login-brand-title {
+  font-size: 3vw;
+  font-weight: 600;
+  margin-bottom: 1vw;
+  color: white;
+}
+
+.admin-login-brand-subtitle {
+  font-size: 1.5vw;
+  opacity: 0.9;
+  line-height: 1.6;
+  color: white;
+}
+
+/* Form elements */
+.admin-login-form-title {
+  font-size: 28px;
+  color: black;
+  margin-bottom: 30px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.admin-login-form-group {
+  margin-bottom: 20px;
+}
+
+.admin-login-form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: black;
+}
+
+.admin-login-form-input {
+  width: 100%;
+  padding: 12px 15px;
+  font-size: 16px;
+  border-radius: 1rem;
+  border: 1px solid #ddd;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  color: black;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.admin-login-submit-button {
+  width: 100%;
+  padding: 14px;
+  background-color: #04530F   ;
+  color: #E8F5E8 ;
+  border: none;
+  border-radius: 1rem;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s;
+}
+
+.admin-login-submit-button:hover {
+  background-color: #034d05;
+}
+
+.admin-login-error-text {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* Circle decorations - RIGHT PANEL (white side) */
+.admin-login-circle1 {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  top: -12%;
+  left: -25%;
+}
+
+.admin-login-circle2 {
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  top: 10%;
+  right: -15%;
+}
+
+.admin-login-circle3 {
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  bottom: 20%;
+  left: -5%;
+}
+
+.admin-login-circle4 {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  bottom: -10%;
+  right: -20%;
+}
+
+/* Circle decorations - LEFT PANEL (green side) */
+.admin-login-left-circle1 {
+  position: absolute;
+  width: 18vw;
+  height: 18vw;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  top: 10%;
+  left: 10%;
+}
+
+.admin-login-left-circle2 {
+  position: absolute;
+  width: 26vw;
+  height: 26vw;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  bottom: 10%;
+  right: 5%;
+}
+
+/* Mobile styles */
+@media (max-width: 780px) {
+  .admin-login-container {
+    flex-direction: column;
+    background-color: #04530F   ;
+  }
+
+  .admin-login-left-panel {
+    display: none;
+  }
+
+  .admin-login-right-panel {
+    width: 100%;
+    background-color: transparent;
+  }
+
+  .admin-login-form-container {
+    background-color: rgba(255, 255, 255, 0.2);
+    width: 90%;
+    padding: 20px;
+  }
+
+  .admin-login-form-title,
+  .admin-login-form-label {
+    color: #E8F5E8 ;
+  }
+
+  .admin-login-form-input {
+    color: #E8F5E8 ;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .admin-login-submit-button {
+    background-color: #E8F5E8 ;
+    color: #04530F   ;
+  }
+
+  .admin-login-submit-button:hover {
+    background-color: #e2e6ea;
+  }
+
+}

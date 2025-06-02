@@ -1,0 +1,269 @@
+CREATE TABLE admin (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    mumbai_cost DECIMAL(10, 2) NOT NULL,
+    out_of_mumbai_cost DECIMAL(10, 2) NOT NULL,
+    lock_status BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE supervisor (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE zones (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    incharge VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    publish BOOLEAN DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE areas (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    incharge VARCHAR(255) NOT NULL,
+    zone_name VARCHAR(255) NOT NULL,
+    zone_incharge VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    publish BOOLEAN DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    pfp TEXT,
+    area_name VARCHAR(255) NOT NULL,
+    area_incharge VARCHAR(255) NOT NULL,
+    zone_name VARCHAR(255) NOT NULL,
+    zone_incharge VARCHAR(255) NOT NULL,
+    regions_incharge_of INT DEFAULT 2, -- 2=region2 only, 1=region1 only, 0=both regions
+    rate_r1 DECIMAL(10, 2),
+    rate_r2 DECIMAL(10, 2),
+    publish BOOLEAN DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE feedback (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    feedback TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE customers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    receipt INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NULL,
+    email VARCHAR(255) NULL,
+    type INT DEFAULT 1,
+    region INT DEFAULT 2,
+    user_name VARCHAR(255) NOT NULL,
+    area_name VARCHAR(255) NOT NULL,
+    area_incharge VARCHAR(255) NOT NULL,
+    zone_name VARCHAR(255) NOT NULL,
+    zone_incharge VARCHAR(255) NOT NULL,
+    status BOOLEAN DEFAULT FALSE,
+    payment_status BOOLEAN DEFAULT FALSE,
+    amount_paid DECIMAL(10, 2) DEFAULT 0.00,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE receipts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    paid_by VARCHAR(255) NOT NULL,
+    collected_by VARCHAR(255) NOT NULL,
+    img TEXT NOT NULL,
+    rate DECIMAL(10, 2) NOT NULL,
+    hissa INT NOT NULL,
+    total_amt DECIMAL(10, 2) NOT NULL,
+    area_name VARCHAR(255) NOT NULL,
+    area_incharge VARCHAR(255) NOT NULL,
+    zone_name VARCHAR(255) NOT NULL,
+    zone_incharge VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE VIEW user_summary AS
+SELECT 
+    u.id,
+    u.name,
+    u.phone,
+    u.email,
+    u.area_name,
+    u.area_incharge,
+    u.zone_name,
+    u.zone_incharge,
+    u.regions_incharge_of,
+    u.rate_r1,
+    u.rate_r2,
+    COUNT(c.id) as total_customers,
+    SUM(CASE WHEN c.payment_status = TRUE THEN 1 ELSE 0 END) as paid_customers,
+    SUM(CASE WHEN c.payment_status = FALSE THEN 1 ELSE 0 END) as pending_customers,
+    SUM(CASE 
+        WHEN c.region = 1 AND c.payment_status = TRUE THEN u.rate_r1
+        WHEN c.region = 2 AND c.payment_status = TRUE THEN u.rate_r2
+        ELSE 0 
+    END) as total_amount_expected,
+    SUM(c.amount_paid) as total_amount_collected,
+    u.publish,
+    u.created_at,
+    u.updated_at
+FROM users u
+LEFT JOIN customers c ON u.name = c.user_name AND c.status = TRUE 
+    AND (
+        (u.regions_incharge_of = 0) OR 
+        (u.regions_incharge_of = 1 AND c.region = 1) OR 
+        (u.regions_incharge_of = 2 AND c.region = 2)
+    )
+WHERE u.publish = TRUE
+GROUP BY u.id, u.name, u.phone, u.email, u.area_name, u.area_incharge, u.zone_name, u.zone_incharge, u.regions_incharge_of, u.rate_r1, u.rate_r2, u.publish, u.created_at, u.updated_at;
+
+CREATE VIEW animal_count AS
+SELECT 
+    z.name as zone_name,
+    z.incharge as zone_incharge,
+    a.name as area_name,
+    a.incharge as area_incharge,
+    
+    COUNT(CASE WHEN c.region = 1 THEN c.id END) as region1_total,
+    FLOOR(COUNT(CASE WHEN c.region = 1 THEN c.id END) / 7) as region1_divided_by_7,
+    SUM(CASE WHEN c.region = 1 AND c.payment_status = TRUE THEN 1 ELSE 0 END) as region1_paid,
+    SUM(CASE WHEN c.region = 1 AND c.payment_status = FALSE THEN 1 ELSE 0 END) as region1_pending,
+    SUM(CASE 
+        WHEN c.region = 1 AND c.payment_status = TRUE THEN u.rate_r1
+        ELSE 0 
+    END) as region1_amount_expected,
+    SUM(CASE WHEN c.region = 1 THEN c.amount_paid ELSE 0 END) as region1_amount_collected,
+    
+    COUNT(CASE WHEN c.region = 2 THEN c.id END) as region2_total,
+    SUM(CASE WHEN c.region = 2 AND c.payment_status = TRUE THEN 1 ELSE 0 END) as region2_paid,
+    SUM(CASE WHEN c.region = 2 AND c.payment_status = FALSE THEN 1 ELSE 0 END) as region2_pending,
+    SUM(CASE 
+        WHEN c.region = 2 AND c.payment_status = TRUE THEN u.rate_r2
+        ELSE 0 
+    END) as region2_amount_expected,
+    SUM(CASE WHEN c.region = 2 THEN c.amount_paid ELSE 0 END) as region2_amount_collected,
+    
+    COUNT(c.id) as total_animals,
+    SUM(CASE WHEN c.payment_status = TRUE THEN 1 ELSE 0 END) as paid,
+    SUM(CASE WHEN c.payment_status = FALSE THEN 1 ELSE 0 END) as pending,
+    SUM(CASE 
+        WHEN c.region = 1 AND c.payment_status = TRUE THEN u.rate_r1
+        WHEN c.region = 2 AND c.payment_status = TRUE THEN u.rate_r2
+        ELSE 0 
+    END) as total_amount_expected,
+    SUM(c.amount_paid) as total_amount_collected,
+    
+    z.created_at,
+    z.updated_at
+FROM zones z
+LEFT JOIN areas a ON z.name = a.zone_name
+LEFT JOIN customers c ON a.name = c.area_name AND c.status = TRUE
+LEFT JOIN users u ON c.user_name = u.name 
+    AND (
+        (u.regions_incharge_of = 0) OR 
+        (u.regions_incharge_of = 1 AND c.region = 1) OR 
+        (u.regions_incharge_of = 2 AND c.region = 2)
+    )
+WHERE z.publish = TRUE AND (a.publish = TRUE OR a.publish IS NULL)
+GROUP BY z.name, z.incharge, a.name, a.incharge, z.created_at, z.updated_at
+ORDER BY z.name, a.name;
+
+INSERT INTO admin (username, password, mumbai_cost, out_of_mumbai_cost, lock_status) 
+VALUES ('admin_user', 'hashed_password', 1500.00, 2000.00, FALSE);
+
+INSERT INTO supervisor (username, password) 
+VALUES ('supervisor_user', 'hashed_password');
+
+INSERT INTO zones (name, incharge, phone, email, publish) 
+VALUES 
+('Zone 1', 'John Doe', '9876543210', 'john@example.com', TRUE),
+('Zone 2', 'Alice Johnson', '9876543220', 'alice@example.com', TRUE);
+
+INSERT INTO areas (name, incharge, zone_name, zone_incharge, phone, email, publish) 
+VALUES 
+('Area 1', 'Jane Smith', 'Zone 1', 'John Doe', '9876543211', 'jane@example.com', TRUE),
+('Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', '9876543212', 'bob@example.com', TRUE),
+('Area 3', 'Carol Brown', 'Zone 2', 'Alice Johnson', '9876543213', 'carol@example.com', TRUE);
+
+INSERT INTO users (name, phone, email, password, pfp, area_name, area_incharge, zone_name, zone_incharge, regions_incharge_of, rate_r1, rate_r2, publish) 
+VALUES 
+('User Name', '9876543214', 'user@example.com', '123456789', 'https://example.com/profile.jpg', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', 2, 100.00, 150.00, TRUE),
+('User Two', '9876543215', 'user2@example.com', '987654321', 'https://example.com/profile2.jpg', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', 1, 120.00, 180.00, TRUE),
+('User Three', '9876543216', 'user3@example.com', '123987456', 'https://example.com/profile3.jpg', 'Area 3', 'Carol Brown', 'Zone 2', 'Alice Johnson', 0, 110.00, 160.00, TRUE);
+
+INSERT INTO feedback (name, feedback) 
+VALUES 
+('John Smith', 'This is a sample feedback that can contain multiple paragraphs and a lot of text content. The service was excellent and I would highly recommend it to others.'),
+('Mary Johnson', 'Great service and professional staff. Very satisfied with the results.');
+
+INSERT INTO customers (receipt, name, phone, email, type, region, user_name, area_name, area_incharge, zone_name, zone_incharge, status, payment_status, amount_paid) 
+VALUES 
+(1001, 'Customer One', '9876543217', 'customer1@example.com', 1, 2, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', TRUE, TRUE, 150.00),
+(1002, 'Customer Two', '9876543218', 'customer2@example.com', 1, 1, 'User Two', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', TRUE, FALSE, 0.00),
+(1003, 'Customer Three', '9876543219', 'customer3@example.com', 2, 2, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', TRUE, TRUE, 100.00),
+(1004, 'Customer Four', '9876543220', 'customer4@example.com', 1, 2, 'User Three', 'Area 3', 'Carol Brown', 'Zone 2', 'Alice Johnson', FALSE, FALSE, 0.00),
+(1005, 'Customer Five', '9876543221', 'customer5@example.com', 1, 1, 'User Two', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', TRUE, TRUE, 120.00),
+(1006, 'Customer Six', '9876543222', 'customer6@example.com', 1, 1, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', TRUE, FALSE, 0.00),
+(1007, 'Customer Seven', '9876543223', 'customer7@example.com', 1, 1, 'User Two', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', TRUE, TRUE, 120.00),
+(1008, 'Customer Eight', '9876543224', 'customer8@example.com', 1, 1, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', FALSE, FALSE, 0.00),
+(1009, 'Customer Nine', '9876543225', 'customer9@example.com', 2, 1, 'User Two', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', TRUE, FALSE, 0.00),
+(1010, 'Customer Ten', '9876543226', 'customer10@example.com', 1, 1, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', TRUE, TRUE, 100.00);
+
+INSERT INTO receipts (user_name, phone, email, paid_by, collected_by, img, rate, hissa, total_amt, area_name, area_incharge, zone_name, zone_incharge) 
+VALUES 
+('User Name', '9876543217', 'customer1@example.com', 'Customer One', 'User Name', 'https://example.com/profile.jpg', 100.00, 5, 500.00, 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe'),
+('User Name', '9876543219', 'customer3@example.com', 'Customer Three', 'User Name', 'https://example.com/profile1.jpg', 100.00, 3, 300.00, 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe'),
+('User Two', '9876543221', 'customer5@example.com', 'Customer Five', 'User Two', 'https://example.com/profile2.jpg', 120.00, 4, 480.00, 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe');
+
+-- Sample queries to view the auto-updating data
+-- SELECT * FROM user_summary;
+-- SELECT * FROM animal_count;
+
+-- Additional useful queries for animal count analysis
+-- SELECT * FROM user_summary;
+-- SELECT * FROM animal_count;
+
+-- Query to see region-wise breakdown by zone
+-- SELECT zone_name, 
+--        SUM(region1_total) as total_region1, 
+--        SUM(region1_divided_by_7) as region1_floor_div_7,
+--        SUM(region1_paid) as region1_paid, 
+--        SUM(region1_pending) as region1_pending,
+--        SUM(region1_amount_expected) as region1_expected_amount,
+--        SUM(region2_total) as total_region2, 
+--        SUM(region2_paid) as region2_paid, 
+--        SUM(region2_pending) as region2_pending,
+--        SUM(region2_amount_expected) as region2_expected_amount
+-- FROM animal_count 
+-- GROUP BY zone_name;
+
+-- Query to see only verified customers (status = TRUE)
+-- SELECT * FROM customers WHERE status = TRUE;
+
+-- Query to see unverified customers (status = FALSE) - these are excluded from views
+-- SELECT * FROM customers WHERE status = FALSE;

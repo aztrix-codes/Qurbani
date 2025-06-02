@@ -1,0 +1,119 @@
+/* feedbackStyles.css */
+
+/* Main Page Container */
+.feedback-page-container {
+}
+
+/* Layout Wrapper - Flex for Desktop, Block for Mobile */
+.feedback-layout-wrapper {
+  display: flex;
+  gap: 30px; /* Space between columns */
+}
+
+/* Form Column (Left on Desktop) */
+.feedback-form-column {
+  flex: 1 1 40%; /* Takes up 40% of the space, can grow/shrink */
+  min-width: 300px; /* Minimum width */
+}
+
+/* List Column (Right on Desktop) */
+.feedback-list-column {
+  flex: 1 1 60%; /* Takes up 60% of the space */
+  display: flex; /* Use flex column to manage height */
+  flex-direction: column;
+  min-width: 300px;
+}
+
+/* Form Section Styling */
+.feedback-form-section {
+  /* Styles applied via inline style from themeStyles.formSection */
+  position: sticky; /* Make form sticky on desktop if desired */
+  top: 20px; /* Adjust sticky position as needed */
+}
+
+/* Feedback List Section Styling */
+.feedback-list-section {
+  /* Styles applied via inline style */
+  flex-grow: 1; /* Allow this section to grow */
+  display: flex;
+  flex-direction: column;
+  /* Remove fixed height from here, apply to scroll container */
+}
+
+.feedback-list-section h3 {
+    font-weight: 500;
+    font-size: 1.3rem;
+    flex-shrink: 0; /* Prevent title from shrinking */
+    /* Other styles applied via inline style */
+}
+
+/* Scrollable Container for Feedback Items */
+.feedback-scroll-container {
+    overflow-y: auto; /* Enable vertical scrolling */
+    flex-grow: 1; /* Allow this container to take remaining space */
+    /* Define max-height for desktop scrolling area */
+    max-height: calc(100vh - 150px); /* Adjust 150px based on header/footer/padding */
+    padding-right: 5px; /* Add a little space for scrollbar */
+}
+
+/* Individual Feedback Item */
+.feedback-item {
+  /* Base styles applied via inline style from themeStyles.feedbackItem */
+  /* Hover effects applied via inline style logic in component */
+}
+
+/* General Input/Textarea Styling */
+input[type="text"],
+textarea {
+  box-sizing: border-box;
+}
+
+textarea {
+    font-family: inherit;
+}
+
+/* Icon Alignment */
+.feedback-item svg,
+button svg {
+    vertical-align: middle;
+}
+
+/* Transitions */
+.feedback-item,
+.feedback-form-section,
+button {
+    transition: all 0.2s ease-in-out;
+}
+
+/* --- Mobile Responsive Styles --- */
+@media (max-width: 768px) {
+  .feedback-page-container {
+    padding: 15px;
+  }
+
+  .feedback-layout-wrapper {
+    display: block; /* Stack columns */
+    gap: 0;
+  }
+
+  .feedback-form-column {
+    margin-bottom: 30px; /* Space between form and list */
+    min-width: unset;
+  }
+
+  .feedback-list-column {
+     min-width: unset;
+  }
+  
+  .feedback-form-section {
+      position: static; /* Remove sticky positioning on mobile */
+  }
+
+  .feedback-scroll-container {
+    /* Adjust height for mobile - e.g., make it take significant portion */
+    max-height: 60vh; /* Example height for mobile scroll area */
+    /* User request for 100vh container height likely meant the scrollable part */
+    /* Adjust this value based on testing */
+  }
+}
+

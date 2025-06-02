@@ -1,0 +1,30 @@
+{
+    "theme": {
+        "light": {
+            "bg-p": "#FAFDF9",
+            "bg-s": "#F2F8F0",
+            "text-p": "#1B3B36",
+            "text-s": "#4A6B47",
+            "accent-p": "#2D5A47",
+            "accent-s": "#7BA05B",
+            "success": "#22C55E",
+            "error": "#EF4444",
+            "border": "#D1E7DD",
+            "hover": "#E8F5E8",
+            "highlight": "#C6F6D5"
+        },
+        "dark": {
+            "bg-p": "#0B0D14",
+            "bg-s": "#141826",
+            "text-p": "#F1F5F9",
+            "text-s": "#94A3B8",
+            "accent-p": "#6366F1",
+            "accent-s": "#8B5CF6",
+            "success": "#10B981",
+            "error": "#F87171",
+            "border": "#1E293B",
+            "hover": "#334155",
+            "highlight": "#475569"
+        }
+    }
+}
