@@ -107,91 +107,262 @@ CREATE TABLE receipts (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE VIEW dashboard AS
+SELECT 
+    -- Mumbai (Region 1) data
+    COALESCE(mumbai_stats.animal_count, 0) as animals_mumbai,
+    COALESCE(mumbai_stats.total_customers, 0) as shares_mumbai,
+    COALESCE(mumbai_stats.total_amount, 0) as total_amount_mumbai,
+    COALESCE(mumbai_stats.paid_count, 0) as paid_mumbai,
+    COALESCE(mumbai_stats.paid_amount, 0) as paid_amount_mumbai,
+    COALESCE(mumbai_stats.pending_count, 0) as pending_mumbai,
+    COALESCE(mumbai_stats.pending_amount, 0) as pending_amount_mumbai,
+    
+    -- Out of Mumbai (Region 2) data
+    COALESCE(out_mumbai_stats.animal_count, 0) as animals_out_mumbai,
+    COALESCE(out_mumbai_stats.total_customers, 0) as shares_out_mumbai,
+    COALESCE(out_mumbai_stats.total_amount, 0) as total_amount_out_mumbai,
+    COALESCE(out_mumbai_stats.paid_count, 0) as paid_out_mumbai,
+    COALESCE(out_mumbai_stats.paid_amount, 0) as paid_amount_out_mumbai,
+    COALESCE(out_mumbai_stats.pending_count, 0) as pending_out_mumbai,
+    COALESCE(out_mumbai_stats.pending_amount, 0) as pending_amount_out_mumbai
+
+FROM 
+(
+    -- Mumbai (Region 1) statistics
+    SELECT 
+        FLOOR(COUNT(*) / 7) as animal_count,
+        COUNT(*) as total_customers,
+        SUM(
+            CASE 
+                WHEN c.amount_paid > 0 THEN c.amount_paid
+                ELSE COALESCE(u.rate_r1, 0)
+            END
+        ) as total_amount,
+        SUM(CASE WHEN c.payment_status = TRUE THEN 1 ELSE 0 END) as paid_count,
+        SUM(
+            CASE 
+                WHEN c.payment_status = TRUE THEN 
+                    CASE 
+                        WHEN c.amount_paid > 0 THEN c.amount_paid
+                        ELSE COALESCE(u.rate_r1, 0)
+                    END
+                ELSE 0
+            END
+        ) as paid_amount,
+        SUM(CASE WHEN c.payment_status = FALSE THEN 1 ELSE 0 END) as pending_count,
+        SUM(
+            CASE 
+                WHEN c.payment_status = FALSE THEN 
+                    CASE 
+                        WHEN c.amount_paid > 0 THEN c.amount_paid
+                        ELSE COALESCE(u.rate_r1, 0)
+                    END
+                ELSE 0
+            END
+        ) as pending_amount
+    FROM customers c
+    LEFT JOIN users u ON (
+        c.user_name = u.name AND 
+        c.area_name = u.area_name AND 
+        c.area_incharge = u.area_incharge AND 
+        c.zone_name = u.zone_name AND 
+        c.zone_incharge = u.zone_incharge
+    )
+    WHERE c.status = TRUE AND c.region = 1
+) as mumbai_stats
+
+CROSS JOIN 
+
+(
+    -- Out of Mumbai (Region 2) statistics
+    SELECT 
+        FLOOR(COUNT(*) / 7) as animal_count,
+        COUNT(*) as total_customers,
+        SUM(
+            CASE 
+                WHEN c.amount_paid > 0 THEN c.amount_paid
+                ELSE COALESCE(u.rate_r2, 0)
+            END
+        ) as total_amount,
+        SUM(CASE WHEN c.payment_status = TRUE THEN 1 ELSE 0 END) as paid_count,
+        SUM(
+            CASE 
+                WHEN c.payment_status = TRUE THEN 
+                    CASE 
+                        WHEN c.amount_paid > 0 THEN c.amount_paid
+                        ELSE COALESCE(u.rate_r2, 0)
+                    END
+                ELSE 0
+            END
+        ) as paid_amount,
+        SUM(CASE WHEN c.payment_status = FALSE THEN 1 ELSE 0 END) as pending_count,
+        SUM(
+            CASE 
+                WHEN c.payment_status = FALSE THEN 
+                    CASE 
+                        WHEN c.amount_paid > 0 THEN c.amount_paid
+                        ELSE COALESCE(u.rate_r2, 0)
+                    END
+                ELSE 0
+            END
+        ) as pending_amount
+    FROM customers c
+    LEFT JOIN users u ON (
+        c.user_name = u.name AND 
+        c.area_name = u.area_name AND 
+        c.area_incharge = u.area_incharge AND 
+        c.zone_name = u.zone_name AND 
+        c.zone_incharge = u.zone_incharge
+    )
+    WHERE c.status = TRUE AND c.region = 2
+) as out_mumbai_stats;
+
+
 CREATE VIEW user_summary AS
 SELECT 
-    u.id,
-    u.name,
+    u.id as user_id,
+    u.name as user_name,
     u.phone,
     u.email,
     u.area_name,
     u.area_incharge,
     u.zone_name,
     u.zone_incharge,
-    u.regions_incharge_of,
     u.rate_r1,
     u.rate_r2,
-    COUNT(c.id) as total_customers,
-    SUM(CASE WHEN c.payment_status = TRUE THEN 1 ELSE 0 END) as paid_customers,
-    SUM(CASE WHEN c.payment_status = FALSE THEN 1 ELSE 0 END) as pending_customers,
-    SUM(CASE 
-        WHEN c.region = 1 AND c.payment_status = TRUE THEN u.rate_r1
-        WHEN c.region = 2 AND c.payment_status = TRUE THEN u.rate_r2
-        ELSE 0 
-    END) as total_amount_expected,
-    SUM(c.amount_paid) as total_amount_collected,
-    u.publish,
-    u.created_at,
-    u.updated_at
-FROM users u
-LEFT JOIN customers c ON u.name = c.user_name AND c.status = TRUE 
-    AND (
-        (u.regions_incharge_of = 0) OR 
-        (u.regions_incharge_of = 1 AND c.region = 1) OR 
-        (u.regions_incharge_of = 2 AND c.region = 2)
-    )
-WHERE u.publish = TRUE
-GROUP BY u.id, u.name, u.phone, u.email, u.area_name, u.area_incharge, u.zone_name, u.zone_incharge, u.regions_incharge_of, u.rate_r1, u.rate_r2, u.publish, u.created_at, u.updated_at;
+    
+    -- Mumbai (Region 1) statistics
+    COALESCE(mumbai_stats.animal_count, 0) as animals_mumbai,
+    COALESCE(mumbai_stats.total_customers, 0) as shares_mumbai,
+    COALESCE(mumbai_stats.paid_count, 0) as paid_mumbai,
+    COALESCE(mumbai_stats.paid_amount, 0) as paid_amount_mumbai,
+    COALESCE(mumbai_stats.pending_count, 0) as pending_mumbai,
+    COALESCE(mumbai_stats.pending_amount, 0) as pending_amount_mumbai,
+    
+    -- Out of Mumbai (Region 2) statistics
+    COALESCE(out_mumbai_stats.animal_count, 0) as animals_out_mumbai,
+    COALESCE(out_mumbai_stats.total_customers, 0) as shares_out_mumbai,
+    COALESCE(out_mumbai_stats.paid_count, 0) as paid_out_mumbai,
+    COALESCE(out_mumbai_stats.paid_amount, 0) as paid_amount_out_mumbai,
+    COALESCE(out_mumbai_stats.pending_count, 0) as pending_out_mumbai,
+    COALESCE(out_mumbai_stats.pending_amount, 0) as pending_amount_out_mumbai,
+    
+    -- Total statistics across both regions
+    COALESCE(mumbai_stats.animal_count, 0) + COALESCE(out_mumbai_stats.animal_count, 0) as total_animals,
+    COALESCE(mumbai_stats.total_customers, 0) + COALESCE(out_mumbai_stats.total_customers, 0) as total_shares,
+    COALESCE(mumbai_stats.paid_count, 0) + COALESCE(out_mumbai_stats.paid_count, 0) as total_paid,
+    COALESCE(mumbai_stats.paid_amount, 0) + COALESCE(out_mumbai_stats.paid_amount, 0) as total_paid_amount,
+    COALESCE(mumbai_stats.pending_count, 0) + COALESCE(out_mumbai_stats.pending_count, 0) as total_pending,
+    COALESCE(mumbai_stats.pending_amount, 0) + COALESCE(out_mumbai_stats.pending_amount, 0) as total_pending_amount
 
-CREATE VIEW animal_count AS
-SELECT 
-    z.name as zone_name,
-    z.incharge as zone_incharge,
-    a.name as area_name,
-    a.incharge as area_incharge,
-    
-    COUNT(CASE WHEN c.region = 1 THEN c.id END) as region1_total,
-    FLOOR(COUNT(CASE WHEN c.region = 1 THEN c.id END) / 7) as region1_divided_by_7,
-    SUM(CASE WHEN c.region = 1 AND c.payment_status = TRUE THEN 1 ELSE 0 END) as region1_paid,
-    SUM(CASE WHEN c.region = 1 AND c.payment_status = FALSE THEN 1 ELSE 0 END) as region1_pending,
-    SUM(CASE 
-        WHEN c.region = 1 AND c.payment_status = TRUE THEN u.rate_r1
-        ELSE 0 
-    END) as region1_amount_expected,
-    SUM(CASE WHEN c.region = 1 THEN c.amount_paid ELSE 0 END) as region1_amount_collected,
-    
-    COUNT(CASE WHEN c.region = 2 THEN c.id END) as region2_total,
-    SUM(CASE WHEN c.region = 2 AND c.payment_status = TRUE THEN 1 ELSE 0 END) as region2_paid,
-    SUM(CASE WHEN c.region = 2 AND c.payment_status = FALSE THEN 1 ELSE 0 END) as region2_pending,
-    SUM(CASE 
-        WHEN c.region = 2 AND c.payment_status = TRUE THEN u.rate_r2
-        ELSE 0 
-    END) as region2_amount_expected,
-    SUM(CASE WHEN c.region = 2 THEN c.amount_paid ELSE 0 END) as region2_amount_collected,
-    
-    COUNT(c.id) as total_animals,
-    SUM(CASE WHEN c.payment_status = TRUE THEN 1 ELSE 0 END) as paid,
-    SUM(CASE WHEN c.payment_status = FALSE THEN 1 ELSE 0 END) as pending,
-    SUM(CASE 
-        WHEN c.region = 1 AND c.payment_status = TRUE THEN u.rate_r1
-        WHEN c.region = 2 AND c.payment_status = TRUE THEN u.rate_r2
-        ELSE 0 
-    END) as total_amount_expected,
-    SUM(c.amount_paid) as total_amount_collected,
-    
-    z.created_at,
-    z.updated_at
-FROM zones z
-LEFT JOIN areas a ON z.name = a.zone_name
-LEFT JOIN customers c ON a.name = c.area_name AND c.status = TRUE
-LEFT JOIN users u ON c.user_name = u.name 
-    AND (
-        (u.regions_incharge_of = 0) OR 
-        (u.regions_incharge_of = 1 AND c.region = 1) OR 
-        (u.regions_incharge_of = 2 AND c.region = 2)
+FROM users u
+
+LEFT JOIN (
+    -- Mumbai (Region 1) statistics per user
+    SELECT 
+        c.user_name,
+        c.area_name,
+        c.area_incharge,
+        c.zone_name,
+        c.zone_incharge,
+        FLOOR(COUNT(*) / 7) as animal_count,
+        COUNT(*) as total_customers,
+        SUM(CASE WHEN c.payment_status = TRUE THEN 1 ELSE 0 END) as paid_count,
+        SUM(
+            CASE 
+                WHEN c.payment_status = TRUE THEN 
+                    CASE 
+                        WHEN c.amount_paid > 0 THEN c.amount_paid
+                        ELSE COALESCE(u2.rate_r1, 0)
+                    END
+                ELSE 0
+            END
+        ) as paid_amount,
+        SUM(CASE WHEN c.payment_status = FALSE THEN 1 ELSE 0 END) as pending_count,
+        SUM(
+            CASE 
+                WHEN c.payment_status = FALSE THEN 
+                    CASE 
+                        WHEN c.amount_paid > 0 THEN c.amount_paid
+                        ELSE COALESCE(u2.rate_r1, 0)
+                    END
+                ELSE 0
+            END
+        ) as pending_amount
+    FROM customers c
+    LEFT JOIN users u2 ON (
+        c.user_name = u2.name AND 
+        c.area_name = u2.area_name AND 
+        c.area_incharge = u2.area_incharge AND 
+        c.zone_name = u2.zone_name AND 
+        c.zone_incharge = u2.zone_incharge
     )
-WHERE z.publish = TRUE AND (a.publish = TRUE OR a.publish IS NULL)
-GROUP BY z.name, z.incharge, a.name, a.incharge, z.created_at, z.updated_at
-ORDER BY z.name, a.name;
+    WHERE c.status = TRUE AND c.region = 1
+    GROUP BY c.user_name, c.area_name, c.area_incharge, c.zone_name, c.zone_incharge
+) as mumbai_stats ON (
+    u.name = mumbai_stats.user_name AND 
+    u.area_name = mumbai_stats.area_name AND 
+    u.area_incharge = mumbai_stats.area_incharge AND 
+    u.zone_name = mumbai_stats.zone_name AND 
+    u.zone_incharge = mumbai_stats.zone_incharge
+)
+
+LEFT JOIN (
+    -- Out of Mumbai (Region 2) statistics per user
+    SELECT 
+        c.user_name,
+        c.area_name,
+        c.area_incharge,
+        c.zone_name,
+        c.zone_incharge,
+        FLOOR(COUNT(*) / 7) as animal_count,
+        COUNT(*) as total_customers,
+        SUM(CASE WHEN c.payment_status = TRUE THEN 1 ELSE 0 END) as paid_count,
+        SUM(
+            CASE 
+                WHEN c.payment_status = TRUE THEN 
+                    CASE 
+                        WHEN c.amount_paid > 0 THEN c.amount_paid
+                        ELSE COALESCE(u2.rate_r2, 0)
+                    END
+                ELSE 0
+            END
+        ) as paid_amount,
+        SUM(CASE WHEN c.payment_status = FALSE THEN 1 ELSE 0 END) as pending_count,
+        SUM(
+            CASE 
+                WHEN c.payment_status = FALSE THEN 
+                    CASE 
+                        WHEN c.amount_paid > 0 THEN c.amount_paid
+                        ELSE COALESCE(u2.rate_r2, 0)
+                    END
+                ELSE 0
+            END
+        ) as pending_amount
+    FROM customers c
+    LEFT JOIN users u2 ON (
+        c.user_name = u2.name AND 
+        c.area_name = u2.area_name AND 
+        c.area_incharge = u2.area_incharge AND 
+        c.zone_name = u2.zone_name AND 
+        c.zone_incharge = u2.zone_incharge
+    )
+    WHERE c.status = TRUE AND c.region = 2
+    GROUP BY c.user_name, c.area_name, c.area_incharge, c.zone_name, c.zone_incharge
+) as out_mumbai_stats ON (
+    u.name = out_mumbai_stats.user_name AND 
+    u.area_name = out_mumbai_stats.area_name AND 
+    u.area_incharge = out_mumbai_stats.area_incharge AND 
+    u.zone_name = out_mumbai_stats.zone_name AND 
+    u.zone_incharge = out_mumbai_stats.zone_incharge
+)
+
+WHERE u.publish = TRUE
+ORDER BY u.name;
+
+
+
 
 INSERT INTO admin (username, password, mumbai_cost, out_of_mumbai_cost, lock_status) 
 VALUES ('admin_user', 'hashed_password', 1500.00, 2000.00, FALSE);
