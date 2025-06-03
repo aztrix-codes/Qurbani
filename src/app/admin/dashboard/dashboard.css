@@ -1,0 +1,282 @@
+/* Dashboard Component Styles - Reference Layout + Mobile Fixes */
+
+.dashboardContainer {
+    padding-top: 2vh;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.dashboardHeader {
+    display: flex;
+    flex-wrap: wrap; 
+    justify-content: space-between;
+    align-items: center;
+    /* Use vw for desktop, override for mobile */
+    padding: 0vw 1vw 0 2vw; 
+    margin-bottom: 2vw; 
+    gap: 1vw; 
+}
+
+.dashboardTitle {
+    font-size: 3vw !important; 
+    font-weight: 600;
+    flex-shrink: 0; 
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 1vw; 
+    flex-wrap: wrap; 
+}
+
+.refreshTimestamp {
+    font-size: 1vw !important; 
+    font-style: normal; 
+    white-space: nowrap; 
+    margin-left: 0.5vw; 
+}
+
+.actionButton {
+    padding: 0.8vw 1.5vw !important; 
+    border: none;
+    border-radius: 5vw !important; 
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center; 
+    gap: 0.5vw !important; 
+    box-shadow: 0 0.5vw 1.5vw rgba(0,0,0,0.1); 
+    font-size: 1vw !important; 
+}
+
+.actionButton.refreshButton {
+    /* Inherits general actionButton padding */
+}
+
+.actionButton.lockButton {
+    width: auto; 
+}
+
+.actionButton:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); 
+}
+
+.actionButton:active {
+    transform: translateY(0px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.actionButton svg {
+    width: 1vw !important; 
+    height: 1vw !important; 
+    flex-shrink: 0; 
+}
+
+.dashboardGrid {
+    display: grid;
+    gap: 2vw; 
+    grid-template-columns: repeat(auto-fit, minmax(15vw, 1fr)) !important; 
+    padding: 0 2vw 2vw 2vw; 
+}
+
+@keyframes cardFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboardCard {
+    border-radius: 1.5vw !important; 
+    padding: 1.5vw !important; 
+    position: relative;
+    overflow: hidden;
+    background-clip: padding-box; 
+    transition: box-shadow 0.3s ease !important; 
+    animation: cardFadeInUp 0.5s ease-out forwards; 
+    opacity: 0; 
+    height: 18vw !important; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between; 
+    box-shadow: 0 1vw 4vw rgba(0,0,0,0.1) !important; 
+}
+
+/* Stagger animation */
+.dashboardGrid > div:nth-child(1) { animation-delay: 0.05s; }
+.dashboardGrid > div:nth-child(2) { animation-delay: 0.1s; }
+.dashboardGrid > div:nth-child(3) { animation-delay: 0.15s; }
+.dashboardGrid > div:nth-child(4) { animation-delay: 0.2s; }
+.dashboardGrid > div:nth-child(5) { animation-delay: 0.25s; }
+.dashboardGrid > div:nth-child(6) { animation-delay: 0.3s; }
+.dashboardGrid > div:nth-child(7) { animation-delay: 0.35s; }
+.dashboardGrid > div:nth-child(8) { animation-delay: 0.4s; }
+
+
+.dashboardCard:hover {
+    box-shadow: 0 1.5vw 5vw rgba(0,0,0,0.15) !important; 
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5vw !important; 
+    flex-shrink: 0; 
+}
+
+.cardContent {
+    flex-grow: 1; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: flex-start; 
+}
+
+.cardDot {
+    width: 1vw !important; 
+    height: 1vw !important; 
+    border-radius: 50%;
+    margin-top: 0.25vw; 
+}
+
+.cardLiveBadge {
+    font-size: 0.8vw !important; 
+    font-weight: 600;
+    padding: 0.4vw 1vw !important; 
+    border-radius: 2vw !important; 
+    text-transform: uppercase;
+    line-height: 1.1;
+}
+
+.cardTitle {
+    font-size: 1.5vw !important; 
+    font-weight: 600;
+    margin-bottom: 1vw !important; 
+}
+
+.cardValue {
+    font-size: 2.5vw !important; 
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 0.5vw !important; 
+}
+
+.cardSecondaryValue {
+    font-size: 1.5vw !important; 
+    font-weight: 600;
+}
+
+/* --- Mobile View Adjustments --- */
+@media (max-width: 768px) {
+    .dashboardContainer {
+        padding: 1rem; /* Reduce overall padding */
+    }
+
+    .dashboardHeader {
+        padding: 0 1vw; /* Use rem */
+        margin-bottom: 1.5rem; /* Use rem */
+        gap: 0.8rem; /* Use rem */
+    }
+
+    .dashboardTitle {
+        font-size: 8vw !important; 
+    }
+
+    .headerActions {
+        gap: 0.5rem; /* Use rem */
+        width: 50%; /* Allow actions to take full width if needed */
+        justify-content: flex-end; /* Align buttons right */
+    }
+
+    .refreshTimestamp {
+        font-size: 0.7rem !important; /* Use rem */
+        margin-left: 0.3rem; /* Use rem */
+    }
+
+    .actionButton {
+        padding: 0.5rem 1rem !important; /* Use rem */
+        gap: 0.3rem !important; /* Use rem */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Adjust shadow */
+        font-size: 0.8rem !important; /* Use rem */
+    }
+
+    .actionButton svg {
+        width: 0.8rem !important; /* Use rem */
+        height: 0.8rem !important; /* Use rem */
+    }
+
+    .dashboardGrid {
+        gap: 1rem; /* Use rem */
+        /* Explicitly 2 columns for mobile */
+        grid-template-columns: repeat(2, 1fr) !important; 
+        padding: 0 0.5rem 1rem 0.5rem; /* Adjust padding */
+    }
+
+    .dashboardCard {
+        border-radius: 5vw !important; /* Use rem */
+        padding: 1rem !important; /* Use rem */
+        height: auto !important; /* Let height be determined by content/grid */
+        min-height: 150px; /* Ensure a minimum height */
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; 
+    }
+
+    .dashboardCard:hover {
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important; /* Adjust hover shadow */
+    }
+
+    .cardHeader {
+        margin-bottom: 0.8rem !important; /* Use rem */
+    }
+
+    .cardDot {
+        width: 0.5rem !important; /* Use rem */
+        height: 0.5rem !important; /* Use rem */
+    }
+
+    .cardLiveBadge {
+        font-size: 0.65rem !important; /* Use rem */
+        padding: 0.2rem 0.5rem !important; /* Use rem */
+        border-radius: 0.5rem !important; /* Use rem */
+    }
+
+    .cardTitle {
+        font-size: 0.9rem !important; /* Use rem */
+        margin-bottom: 0.5rem !important; /* Use rem */
+    }
+
+    .cardValue {
+        font-size: 1.8rem !important; /* Use rem */
+        margin-bottom: 0.2rem !important; /* Use rem */
+    }
+
+    .cardSecondaryValue {
+        font-size: 0.8rem !important; /* Use rem */
+    }
+}
+
+/* Loading/Error states */
+.loadingState, .errorState {
+    text-align: center;
+    padding: 3rem;
+    font-size: 1.1rem;
+    min-height: 200px; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.errorState button {
+    margin-left: 1rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.3rem;
+    cursor: pointer;
+}
+
