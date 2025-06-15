@@ -231,7 +231,7 @@ SELECT
     u.zone_incharge,
     u.rate_r1,
     u.rate_r2,
-    
+    u.regions_incharge_of as region, -- Added region field
     -- Mumbai (Region 1) statistics
     COALESCE(mumbai_stats.animal_count, 0) as animals_mumbai,
     COALESCE(mumbai_stats.total_customers, 0) as shares_mumbai,
@@ -239,7 +239,6 @@ SELECT
     COALESCE(mumbai_stats.paid_amount, 0) as paid_amount_mumbai,
     COALESCE(mumbai_stats.pending_count, 0) as pending_mumbai,
     COALESCE(mumbai_stats.pending_amount, 0) as pending_amount_mumbai,
-    
     -- Out of Mumbai (Region 2) statistics
     COALESCE(out_mumbai_stats.animal_count, 0) as animals_out_mumbai,
     COALESCE(out_mumbai_stats.total_customers, 0) as shares_out_mumbai,
@@ -247,7 +246,6 @@ SELECT
     COALESCE(out_mumbai_stats.paid_amount, 0) as paid_amount_out_mumbai,
     COALESCE(out_mumbai_stats.pending_count, 0) as pending_out_mumbai,
     COALESCE(out_mumbai_stats.pending_amount, 0) as pending_amount_out_mumbai,
-    
     -- Total statistics across both regions
     COALESCE(mumbai_stats.animal_count, 0) + COALESCE(out_mumbai_stats.animal_count, 0) as total_animals,
     COALESCE(mumbai_stats.total_customers, 0) + COALESCE(out_mumbai_stats.total_customers, 0) as total_shares,
@@ -255,11 +253,8 @@ SELECT
     COALESCE(mumbai_stats.paid_amount, 0) + COALESCE(out_mumbai_stats.paid_amount, 0) as total_paid_amount,
     COALESCE(mumbai_stats.pending_count, 0) + COALESCE(out_mumbai_stats.pending_count, 0) as total_pending,
     COALESCE(mumbai_stats.pending_amount, 0) + COALESCE(out_mumbai_stats.pending_amount, 0) as total_pending_amount
-
 FROM users u
-
 LEFT JOIN (
-    -- Mumbai (Region 1) statistics per user
     SELECT 
         c.user_name,
         c.area_name,
@@ -307,9 +302,7 @@ LEFT JOIN (
     u.zone_name = mumbai_stats.zone_name AND 
     u.zone_incharge = mumbai_stats.zone_incharge
 )
-
 LEFT JOIN (
-    -- Out of Mumbai (Region 2) statistics per user
     SELECT 
         c.user_name,
         c.area_name,
@@ -357,10 +350,8 @@ LEFT JOIN (
     u.zone_name = out_mumbai_stats.zone_name AND 
     u.zone_incharge = out_mumbai_stats.zone_incharge
 )
-
 WHERE u.publish = TRUE
 ORDER BY u.name;
-
 
 
 

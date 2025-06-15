@@ -21,6 +21,10 @@ const theme = {
     neutralLight: "#E5E7EB",
     neutralMedium: "#9CA3AF",
     neutralDark: "#4B5563",
+
+    pageHeaderBG: "#1E4034",
+    pageHeaderText: "#FAFDF9",
+
   },
   dark: {
     // Existing
@@ -45,6 +49,9 @@ const theme = {
     neutralLight: "#374151",
     neutralMedium: "#6B7280",
     neutralDark: "#D1D5DB",
+
+    pageHeaderBG: "#0B0D14",
+    pageHeaderText: "#F1F5F9",
   }
 };
 

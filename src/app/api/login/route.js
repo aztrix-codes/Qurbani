@@ -1,6 +1,6 @@
 // app/api/login/route.js
 import { NextResponse } from 'next/server';
-import pool from '@/app/api/db';
+import pool from '../db';
 
 export async function POST(request) {
   try {
@@ -78,15 +78,6 @@ export async function POST(request) {
       responseData.customers = customers;
     }
 
-    // For admins/supervisors, include summary data
-    if (userType === 'admin' || userType === 'supervisor') {
-      const [userSummary] = await pool.query('SELECT * FROM user_summary');
-      const [animalCount] = await pool.query('SELECT * FROM animal_count');
-      responseData.summary = {
-        userSummary,
-        animalCount,
-      };
-    }
 
     return NextResponse.json(responseData);
 

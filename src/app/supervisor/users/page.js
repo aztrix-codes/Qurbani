@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react'; // Added useRef
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiEye, FiEyeOff, FiUpload } from 'react-icons/fi'; // Added FiUpload
 import axios from 'axios';
 import './userStyles.css'; // Ensure this path is correct
-import { useTheme } from '@/app/themeContext'; // Ensure this path is correct
+import { useTheme } from '../../themeContext'; // Ensure this path is correct
 
 export default function UsersPage() {
   // Use Theme Context

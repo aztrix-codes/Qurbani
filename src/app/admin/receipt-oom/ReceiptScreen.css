@@ -1,0 +1,780 @@
+.receiptScreenContainer {
+  padding: 1vw;
+  box-sizing: border-box;
+}
+
+.receiptScreenCard {
+  padding: 1vw;
+  box-shadow: 0 0.2vw 0.8vw rgba(0, 0, 0, 0.1);
+}
+
+.receiptScreenHeader {
+  padding: 1.5vw 3vw;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5vw;
+}
+
+.headerTitle h1 {
+  font-size: 2vw;
+  font-weight: bold;
+  margin-bottom: 0.5vw;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1vw;
+  flex-wrap: wrap;
+}
+
+.searchContainer {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1vw;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.searchInput {
+  padding: 0.6vw 1vw 0.6vw 2.5vw;
+  width: 35vw;
+  border-radius: 0.6vw;
+  font-size: 1vw;
+  transition: all 0.2s ease;
+}
+
+.stats {
+  margin-top: 1vw;
+  padding-top: 1vw;
+  font-size: 1vw;
+  display: flex;
+  gap: 2vw;
+}
+
+.stats span {
+  font-weight: bold;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 5% 15% 20% 20% 15% 15% 10%;
+}
+
+.tableCell {
+  padding: 1.2vw;
+  display: flex;
+  align-items: center;
+  font-size: 1vw;
+}
+
+.cellId {
+  flex: 0 0 5%;
+}
+
+.cellZone {
+  flex: 0 0 15%;
+}
+
+.cellArea {
+  flex: 0 0 20%;
+}
+
+.cellSubmitted {
+  flex: 0 0 20%;
+}
+
+.cellHissa {
+  flex: 0 0 15%;
+  justify-content: center;
+}
+
+.cellReceipt {
+  flex: 0 0 15%;
+  justify-content: center;
+}
+
+.cellActions {
+  flex: 0 0 10%;
+  justify-content: center;
+}
+
+.tableBody {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.dataRow {
+  display: grid;
+  grid-template-columns: 5% 15% 20% 20% 15% 15% 10%;
+  transition: background-color 0.3s;
+}
+
+.dataRow:hover {
+  background-color: rgba(247, 250, 247, 0.1);
+}
+
+.hissaBadge {
+  padding: 0.3vw 0.8vw;
+  border-radius: 3vw;
+  font-size: 0.8vw;
+  font-weight: bold;
+}
+
+.actionButton {
+  width: 2.5vw;
+  height: 2.5vw;
+  border-radius: 0.4vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  background: transparent;
+}
+
+.emptyState {
+  padding: 5vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyIcon {
+  width: 4vw;
+  height: 4vw;
+  border-radius: 1vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2vw;
+}
+
+.emptyState h3 {
+  font-size: 1.2vw;
+  font-weight: bold;
+  margin-bottom: 0.5vw;
+}
+
+.emptyState p {
+  font-size: 1vw;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  border-radius: 0.6vw;
+  width: 80vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  padding: 1.5vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeaderTitle {
+  font-size: 1.5vw;
+  font-weight: bold;
+  margin-top: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 2vw;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 1.5vw;
+  overflow-y: auto;
+  max-height: calc(90vh - 8vw);
+}
+
+.recordDetails {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15vw, 1fr));
+  gap: 1.5vw;
+  margin-bottom: 2vw;
+}
+
+.recordItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vw;
+}
+
+.recordLabel {
+  font-size: 0.9vw;
+  font-weight: 500;
+}
+
+.recordValue {
+  font-size: 1.1vw;
+  font-weight: bold;
+}
+
+.recordTable {
+  border-radius: 0.6vw;
+  overflow: hidden;
+}
+
+.recordTableHeader {
+  border-bottom: 0.1vw solid;
+}
+
+.recordTableRow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.recordTableCell {
+  padding: 1vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9vw;
+}
+
+.recordTableBody {
+  max-height: 20vw;
+  overflow-y: auto;
+}
+
+.statusBadge {
+  padding: 0.3vw 0.8vw;
+  border-radius: 0.5vw;
+  font-size: 0.9vw;
+  font-weight: bold;
+}
+
+.formSection {
+  margin-bottom: 2vw;
+  padding: 1.5vw;
+  border-radius: 0.6vw;
+}
+
+.formSection h3 {
+  font-size: 1.2vw;
+  font-weight: bold;
+  margin-bottom: 1.5vw;
+  margin-top: 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15vw, 1fr));
+  gap: 1.5vw;
+  margin-bottom: 2vw;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vw;
+}
+
+.formGroup label {
+  font-size: 0.9vw;
+  font-weight: 500;
+}
+
+.formInput {
+  padding: 0.8vw;
+  border-radius: 0.4vw;
+  font-size: 0.9vw;
+}
+
+.errorMessage {
+  font-size: 0.8vw;
+  margin-top: 0.5vw;
+}
+
+.imageUploadSection {
+  margin-bottom: 2vw;
+}
+
+.imagePreview {
+  width: 100%;
+  height: 20vw;
+  border-radius: 0.6vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1vw;
+  overflow: hidden;
+}
+
+.previewImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.placeholderImage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1vw;
+}
+
+.placeholderImage div {
+  font-size: 1vw;
+}
+
+.imageActions {
+  display: flex;
+  gap: 1.5vw;
+  justify-content: center;
+  margin-top: 1vw;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+  padding: 0.5vw 1.2vw;
+  border-radius: 0.4vw;
+  font-size: 0.875vw;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.formActions {
+  margin-top: 2vw;
+  display: flex;
+  justify-content: center;
+}
+
+.submitButton {
+  padding: 0.8vw 2vw;
+  border-radius: 0.4vw;
+  font-size: 1vw;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.receiptTable {
+  margin-bottom: 2vw;
+  border-radius: 0.6vw;
+  overflow: hidden;
+}
+
+.receiptTableHeader {
+  border-bottom: 0.1vw solid;
+}
+
+.receiptTableRow {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+}
+
+.receiptTableHeaderCell {
+  padding: 0.8vw 0.5vw;
+  font-size: 0.875vw;
+  font-weight: bold;
+  text-align: center;
+}
+
+.receiptTableCell {
+  padding: 0.8vw 0.5vw;
+  font-size: 0.875vw;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.receiptTableBody {
+  max-height: 20vw;
+  overflow-y: auto;
+}
+
+.receiptTableFooter {
+  border-top: 0.1vw solid;
+}
+
+.receiptTableFooterCell {
+  padding: 0.8vw 0.5vw;
+  font-size: 0.875vw;
+  font-weight: bold;
+  text-align: center;
+}
+
+.noData {
+  padding: 3vw;
+  text-align: center;
+  font-size: 1vw;
+}
+
+@media screen and (max-width: 768px) {
+  .receiptScreenContainer {
+    padding: 1rem;
+  }
+
+  .receiptScreenCard {
+    border-radius: 1rem;
+    padding: 1rem;
+  }
+
+  .receiptScreenHeader {
+    padding: 1rem 1.5rem;
+  }
+
+  .headerTitle h1 {
+    font-size: 1.5rem;
+  }
+
+  .headerActions {
+    gap: 1rem;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .searchInput {
+    width: 100%;
+    padding: 0.5rem 0.8rem 0.5rem 2rem;
+    font-size: 0.8rem;
+  }
+
+  .searchIcon {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .stats {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    font-size: 0.8rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tableRow {
+    grid-template-columns: 10% 20% 25% 25% 20%;
+  }
+
+  .tableCell {
+    padding: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .cellId {
+    display: none;
+  }
+
+  .cellZone {
+    flex: 0 0 20%;
+  }
+
+  .cellArea {
+    flex: 0 0 25%;
+  }
+
+  .cellSubmitted {
+    flex: 0 0 25%;
+  }
+
+  .cellHissa {
+    flex: 0 0 20%;
+  }
+
+  .cellReceipt {
+    display: none;
+  }
+
+  .cellActions {
+    flex: 0 0 10%;
+  }
+
+  .dataRow {
+    grid-template-columns: 10% 20% 25% 25% 20%;
+  }
+
+  .actionButton {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .actionButton svg {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .hissaBadge {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  .emptyState h3 {
+    font-size: 1rem;
+  }
+
+  .emptyState p {
+    font-size: 0.8rem;
+  }
+
+  .emptyIcon {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .emptyIcon svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .modalContent {
+    width: 95vw;
+  }
+
+  .modalHeaderTitle {
+    font-size: 1.2rem;
+  }
+
+  .closeButton {
+    font-size: 1.5rem;
+  }
+
+  .recordDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .recordLabel {
+    font-size: 0.8rem;
+  }
+
+  .recordValue {
+    font-size: 0.9rem;
+  }
+
+  .recordTableRow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .recordTableCell {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+
+  .recordTableCell:nth-child(1),
+  .recordTableCell:nth-child(4) {
+    display: none;
+  }
+
+  .statusBadge {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .formSection h3 {
+    font-size: 1rem;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formGroup label {
+    font-size: 0.8rem;
+  }
+
+  .formInput {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .errorMessage {
+    font-size: 0.7rem;
+  }
+
+  .imagePreview {
+    height: 40vw;
+  }
+
+  .placeholderImage div {
+    font-size: 0.8rem;
+  }
+
+  .placeholderImage svg {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .button {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .button svg {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .submitButton {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.8rem;
+  }
+
+  .receiptTableRow {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .receiptTableHeaderCell {
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+
+  .receiptTableCell {
+    font-size: 0.7rem;
+    padding: 0.4rem;
+  }
+
+  .receiptTableFooterCell {
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+
+  .noData {
+    font-size: 0.8rem;
+  }
+}
+
+
+@media screen and (max-width: 768px) {
+  .tableRow {
+    grid-template-columns: 10% 20% 25% 25% 20%; /* Adjusted for mobile: ID, Zone, Area, Submitted By, Hissa */
+  }
+
+  .tableCell {
+    padding: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .cellId {
+    display: none; /* Hide ID column on mobile */
+  }
+
+  .cellZone {
+    flex: 0 0 20%;
+  }
+
+  .cellArea {
+    flex: 0 0 25%;
+  }
+
+  .cellSubmitted {
+    flex: 0 0 25%;
+  }
+
+  .cellHissa {
+    flex: 0 0 20%;
+  }
+
+  .cellReceipt {
+    display: none; /* Hide Receipt column on mobile */
+  }
+
+  .cellActions {
+    flex: 0 0 10%;
+  }
+
+  .dataRow {
+    grid-template-columns: 10% 20% 25% 25% 20%; /* Match tableRow for data rows */
+  }
+
+  .actionButton {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .actionButton svg {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .hissaBadge {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  /* Adjustments for modal table */
+  .recordTableRow {
+    grid-template-columns: repeat(3, 1fr); /* Adjust columns for mobile */
+  }
+
+  .recordTableCell {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+
+  .recordTableCell:nth-child(1),
+  .recordTableCell:nth-child(4) {
+    display: none; /* Hide Share Count and Purpose columns on mobile for record table */
+  }
+
+  .statusBadge {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  /* Adjustments for receipt table */
+  .receiptTableRow {
+    grid-template-columns: repeat(5, 1fr); /* Adjust columns for mobile */
+  }
+
+  .receiptTableHeaderCell {
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+
+  .receiptTableCell {
+    font-size: 0.7rem;
+    padding: 0.4rem;
+  }
+
+  .receiptTableFooterCell {
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+}
+
+

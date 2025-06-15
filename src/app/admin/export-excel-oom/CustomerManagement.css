@@ -1,0 +1,313 @@
+/* CustomerManagement.css */
+.customerManagementContainer {
+  padding: 1vw;
+  box-sizing: border-box;
+  min-height: 100vh; /* Ensure full viewport height */
+  display: flex;
+  flex-direction: column;
+}
+
+.customerManagementCard {
+  padding: 1vw;
+  box-shadow: 0 0.2vw 0.8vw rgba(0, 0, 0, 0.1);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.customerManagementHeader {
+  padding: 1.5vw 3vw;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5vw;
+}
+
+.headerTitle h1 {
+  font-size: 2vw;
+  font-weight: bold;
+  margin: 0;
+  margin-bottom: 0.5vw;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1vw;
+  flex-wrap: wrap;
+}
+
+.searchContainer {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1vw;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.searchInput {
+  padding: 0.6vw 1vw 0.6vw 2.5vw;
+  width: 20vw;
+  border-radius: 0.6vw;
+  font-size: 1vw;
+  transition: all 0.2s ease;
+}
+
+.searchInput::placeholder {
+  opacity: 0.7;
+}
+
+.searchInput:focus {
+  outline: none;
+  opacity: 0.9;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5vw;
+  padding: 0.6vw 2vw;
+  font-size: 1vw;
+  font-weight: 500;
+  border-radius: 0.6vw;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.exportBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0.3vw 1vw rgba(0, 0, 0, 0.1);
+}
+
+.exportBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stats {
+  margin-top: 1vw;
+  padding-top: 1vw;
+  font-size: 1vw;
+}
+
+.tableContainer {
+  flex: 1;
+  overflow-x: auto;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 5% 20% 15% 25% 15% 10% 10%; /* Sr no., Name, Phone, Email, Area, Zone, Status */
+  padding: 0 2vw;
+}
+
+.tableCell {
+  padding: 1.2vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1vw;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tableHeader {
+  border-bottom: 0.1vw solid;
+}
+
+.tableBody {
+  max-height: 50vh; /* Limit table body height */
+  overflow-y: auto;
+}
+
+.dataRow {
+  display: grid;
+  grid-template-columns: 5% 20% 15% 25% 15% 10% 10%;
+  padding: 0 2vw;
+  transition: background-color 0.3s;
+}
+
+.dataRow:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.dataRow .tableCell {
+  padding: 1vw;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.statusBadgePending {
+  padding: 0.3vw 0.8vw;
+  border-radius: 0.5vw;
+  font-size: 0.8vw;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.loadingState {
+  padding: 5vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1vw;
+}
+
+.spinner {
+  width: 2vw;
+  height: 2vw;
+  border: 0.2vw solid transparent;
+  border-top: 0.2vw solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.emptyState {
+  padding: 5vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1vw;
+}
+
+.emptyIcon {
+  opacity: 0.5;
+}
+
+.emptyState h3 {
+  font-size: 1.2vw;
+  font-weight: bold;
+  margin: 0;
+}
+
+.emptyState p {
+  font-size: 1vw;
+  opacity: 0.8;
+}
+
+/* Scrollbar styling */
+.tableBody::-webkit-scrollbar {
+  width: 0.5vw;
+}
+
+.tableBody::-webkit-scrollbar-track {
+  background: transparent; /* Theme-driven in component */
+}
+
+.tableBody::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3); /* Theme-driven in component */
+  border-radius: 1vw;
+}
+
+.tableBody::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Responsive design */
+@media screen and (max-width: 1200px) {
+  .headerTitle h1 {
+    font-size: 1.5vw;
+  }
+
+  .searchInput {
+    width: 15vw;
+  }
+
+  .tableRow, .dataRow {
+    grid-template-columns: 5% 20% 15% 25% 15% 10% 10%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .customerManagementContainer {
+    padding: 1rem;
+  }
+
+  .customerManagementCard {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .customerManagementHeader {
+    padding: 1rem 1.5rem;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .searchInput {
+    width: 100%;
+    padding: 0.5rem 0.8rem 0.5rem 2rem;
+    font-size: 0.8rem;
+  }
+
+  .searchIcon {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .exportBtn {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.8rem;
+  }
+
+  .stats {
+    font-size: 0.8rem;
+  }
+
+  .tableRow, .dataRow {
+    grid-template-columns: 20% 20% 25% 20% 15%; /* Name, Phone, Email, Area, Zone */
+  }
+
+  .tableCell {
+    padding: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .cellId, .cellStatus {
+    display: none; /* Hide Sr no. and Status on mobile */
+  }
+
+  .dataRow .tableCell {
+    padding: 0.5rem;
+  }
+
+  .statusBadgePending {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .emptyState h3 {
+    font-size: 1rem;
+  }
+
+  .emptyState p {
+    font-size: 0.8rem;
+  }
+
+  .spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 0.15rem;
+  }
+}

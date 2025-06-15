@@ -1,6 +1,6 @@
 // app/api/receipts/route.js
 import { NextResponse } from 'next/server';
-import pool from '@/app/api/db';
+import pool from '../db';
 
 // Helper for auth check
 function checkAuth(authHeader) {

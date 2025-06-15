@@ -1,22 +1,17 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useTheme } from '@/app/themeContext'; // Assuming themeContext is one level up
-import './dashboard.css'; // Import the CSS file we created
-// Import icons from lucide-react
+import './dashboard.css'; 
 import { RefreshCw, Lock, Unlock } from 'lucide-react';
+import { useTheme } from '../../themeContext';
 
 
-// Helper to format currency
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount || 0);
 };
 
-// Helper to format timestamp
 const formatTimestamp = (date) => {
   if (!date) return '';
-  // Format like 10:37:13 am (adjust locale/options if needed)
   return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); 
 };
 
@@ -26,7 +21,8 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastRefreshed, setLastRefreshed] = useState(null);
-  const [isLocked, setIsLocked] = useState(false); // State for lock toggle
+  const [isLocked, setIsLocked] = useState(false); 
+  const [lockLoading, setLockLoading] = useState(false); 
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -41,36 +37,85 @@ function Dashboard() {
       
       if (result && result.length > 0) {
         setData(result[0]);
-        setLastRefreshed(new Date()); // Update timestamp on success
+        setLastRefreshed(new Date()); 
         console.log("Data fetched successfully:", result[0]);
       } else {
         console.warn("API returned empty or unexpected data:", result);
         setData({}); 
         setError("Received no data from the server.");
-        setLastRefreshed(null); // Clear timestamp on error/empty
+        setLastRefreshed(null); 
       }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError(`Failed to load dashboard data: ${err.message}`);
       setData(null); 
-      setLastRefreshed(null); // Clear timestamp on error
+      setLastRefreshed(null); 
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const fetchLockStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/lock");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const result = await response.json();
+      
+      if (result && result.length > 0) {
+        setIsLocked(Boolean(result[0].lock_status));
+        console.log("Lock status fetched:", result[0].lock_status);
+      }
+    } catch (err) {
+      console.error("Error fetching lock status:", err);
+    }
+  }, []);
 
-  // Toggle function for the lock button
-  const toggleLock = () => {
-    setIsLocked(prev => !prev);
-    console.log(`Dashboard lock toggled: ${!isLocked ? 'Locked' : 'Unlocked'}`);
-    // Add any side effects of locking/unlocking here in the future
+  const updateLockStatus = async (newLockStatus) => {
+    setLockLoading(true);
+    try {
+      const response = await fetch("/api/lock", {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lock_status: newLockStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Lock status updated:", result);
+      
+      setIsLocked(Boolean(result.lock_status));
+      
+    } catch (err) {
+      console.error("Error updating lock status:", err);
+      setIsLocked(prev => !prev);
+      setError(`Failed to update lock status: ${err.message}`);
+    } finally {
+      setLockLoading(false);
+    }
   };
 
-  // Card Data Mapping
+  const toggleLock = async () => {
+    if (lockLoading) return; 
+    
+    const newLockStatus = !isLocked;
+    
+    setIsLocked(newLockStatus);
+    
+    await updateLockStatus(newLockStatus);
+  };
+
+  useEffect(() => {
+    fetchData();
+    fetchLockStatus(); 
+  }, [fetchData, fetchLockStatus]);
+
   const cardData = data ? [
     { title: 'Animals (Out of Mumbai)', value: data.animals_out_mumbai, secondaryValue: null, key: 'oom_animals' },
     { title: 'Shares (Out of Mumbai)', value: data.shares_out_mumbai, secondaryValue: formatCurrency(data.total_amount_out_mumbai), key: 'oom_shares' },
@@ -82,12 +127,11 @@ function Dashboard() {
     { title: 'Pending (Mumbai)', value: data.pending_mumbai, secondaryValue: formatCurrency(data.pending_amount_mumbai), key: 'mum_pending' },
   ] : [];
 
-  // Render Logic
-  if (loading && !data) { // Show loading only on initial load
+  if (loading && !data) { 
     return <div className="loadingState" style={{ color: activeTheme.textSecondary }}>Loading Dashboard...</div>;
   }
 
-  if (error && !data) { // Show error prominently if initial load fails
+  if (error && !data) { 
     return (
         <div className="errorState" style={{ color: activeTheme.error }}>
             {error} 
@@ -105,7 +149,6 @@ function Dashboard() {
     );
   }
 
-  // Determine button colors based on theme
   const primaryButtonBg = activeTheme.accentPrimary;
   const primaryButtonText = activeTheme.bgPrimary; 
   const primaryButtonHoverBg = activeTheme.accentPrimaryDark || activeTheme.accentPrimary; 
@@ -114,12 +157,11 @@ function Dashboard() {
   const secondaryButtonText = activeTheme.textPrimary;
   const secondaryButtonHoverBg = activeTheme.hover;
   
-  // Lock button specific colors (using success for locked state as per image)
   const lockButtonBg = activeTheme.success;
   const lockButtonText = activeTheme.bgPrimary;
-  const lockButtonHoverBg = activeTheme.success; // Or a darker success shade if available
+  const lockButtonHoverBg = activeTheme.success; 
 
-  const unlockButtonBg = activeTheme.bgSecondary; // Use secondary for unlocked
+  const unlockButtonBg = activeTheme.bgSecondary; 
   const unlockButtonText = activeTheme.textPrimary;
   const unlockButtonHoverBg = activeTheme.hover;
 
@@ -129,13 +171,11 @@ function Dashboard() {
         <h2 className="dashboardTitle" style={{ color: activeTheme.textPrimary }}>Dashboard</h2>
         
         <div className="headerActions">
-          {/* Refresh Button with Time Inside */}
           <button 
             className="actionButton refreshButton" 
             onClick={fetchData} 
             disabled={loading} 
             style={{
-              // Use secondary background for refresh button itself
               backgroundColor: secondaryButtonBg,
               color: secondaryButtonText,
               border: `1px solid ${activeTheme.border}`,
@@ -146,39 +186,38 @@ function Dashboard() {
             onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = secondaryButtonBg)}
             title="Refresh Dashboard Data"
           >
-            <RefreshCw size={16} color={secondaryButtonText} /> {/* Lucide Icon */} 
+            <RefreshCw size={16} color={secondaryButtonText} /> 
             {lastRefreshed && (
               <span className="refreshTimestamp" style={{ color: activeTheme.textSecondary }}>
                 {formatTimestamp(lastRefreshed)}
               </span>
             )}
-            {/* Hide text label for refresh button to match image */}
-            {/* <span>{loading ? 'Refreshing...' : 'Refresh'}</span> */}
           </button>
 
-          {/* Lock/Unlock Button (Now uses Lucide icons) */}
           <button 
             className="actionButton lockButton" 
             onClick={toggleLock} 
+            disabled={lockLoading}
             style={{
               backgroundColor: isLocked ? lockButtonBg : unlockButtonBg,
               color: isLocked ? lockButtonText : unlockButtonText,
-              border: `1px solid ${isLocked ? lockButtonBg : activeTheme.border}`
+              border: `1px solid ${isLocked ? lockButtonBg : activeTheme.border}`,
+              opacity: lockLoading ? 0.6 : 1,
+              cursor: lockLoading ? 'not-allowed' : 'pointer'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isLocked ? lockButtonHoverBg : unlockButtonHoverBg}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isLocked ? lockButtonBg : unlockButtonBg}
-            title={isLocked ? 'Unlock Dashboard (Visual Only)' : 'Lock Dashboard (Visual Only)'}
+            onMouseEnter={(e) => !lockLoading && (e.currentTarget.style.backgroundColor = isLocked ? lockButtonHoverBg : unlockButtonHoverBg)}
+            onMouseLeave={(e) => !lockLoading && (e.currentTarget.style.backgroundColor = isLocked ? lockButtonBg : unlockButtonBg)}
+            title={isLocked ? 'Unlock Dashboard' : 'Lock Dashboard'}
           >
             {isLocked ? 
               <Lock size={16} color={lockButtonText} /> : 
               <Unlock size={16} color={unlockButtonText} />
             }
-            <span>{isLocked ? 'Lock' : 'Unlock'}</span> {/* Changed text to match image */} 
+            <span>{lockLoading ? 'Updating...' : (isLocked ? 'Locked' : 'Unlocked')}</span>
           </button>
         </div>
       </div>
 
-      {/* Display error inline if fetch fails after initial load */}
       {error && data && (
           <div style={{ color: activeTheme.error, marginBottom: '1rem', textAlign: 'center' }}>
               {error} (Showing last available data)
@@ -211,7 +250,6 @@ function Dashboard() {
                 Live
               </span>
             </div>
-            {/* Wrap content for flexbox alignment */}
             <div className="cardContent">
               <div className="cardTitle" style={{ color: activeTheme.textSecondary }}>
                 {card.title}
@@ -233,4 +271,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-

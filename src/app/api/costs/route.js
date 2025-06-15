@@ -1,6 +1,6 @@
 // app/api/admin/costs/route.js
 import { NextResponse } from 'next/server';
-import pool from '@/app/api/db';
+import pool from '../db';
 
 // GET Mumbai costs
 export async function GET() {

@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FiSend, FiMessageSquare, FiUser } from 'react-icons/fi'; // Removed FiClock
 import './feedback.css'; // Ensure this path is correct
-import { useTheme } from '@/app/themeContext'; // Assuming theme context path
+import { useTheme } from '../..//themeContext'; // Assuming theme context path
 
 export default function FeedbackComponent() {
   const { activeTheme, isLight } = useTheme();
