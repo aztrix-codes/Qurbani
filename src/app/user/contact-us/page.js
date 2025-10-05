@@ -1,39 +1,31 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { Phone, Mail, MapPin, Clock, Send, CheckCircle } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock, Send, CheckCircle, Building, Wrench } from 'lucide-react'
 import './style.css'
 import { useRouter } from 'next/navigation';
+import { useTheme } from '../../themeContext';
 
 function ContactPage() {
+  const { activeTheme } = useTheme();
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [userData, setUserData] = useState({ name: '', userId: 0, isAuthenticated: false, status: 0 });
+  const [userData, setUserData] = useState({ name: 'Guest' });
   const [feedback, setFeedback] = useState('');
   const [charCount, setCharCount] = useState(0);
-  const MAX_CHARS = 3000; // Maximum characters allowed
-
+  const MAX_CHARS = 3000;
   const router = useRouter();
-  
-//     // Get user data from localStorage
-//     try {
-//       const storedUserData = JSON.parse(localStorage.getItem('userData'));
-//       if (storedUserData) {
-//         setUserData(storedUserData);
-        
-//         // Redirect if user is not authenticated
-//         if (
-//           storedUserData.userId === 0 &&
-//           storedUserData.isAuthenticated === false &&
-//           storedUserData.status === 0
-//         ) {
-//           router.replace('/');
-//         }
-//       }
-//     } catch (error) {
-//       console.error('Error accessing localStorage:', error);
-//     }
-//   }, [router]);
+
+  useEffect(() => {
+    try {
+      const storedUserData = JSON.parse(localStorage.getItem('userData'));
+      if (storedUserData && storedUserData.name) {
+        setUserData(storedUserData);
+      }
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+    }
+  }, []);
 
   const handleFeedbackChange = (e) => {
     const text = e.target.value;
@@ -45,187 +37,140 @@ function ContactPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Reset states
     setErrorMessage('');
     setIsLoading(true);
     
     try {
-      // Validate feedback
       if (!feedback.trim()) {
         setErrorMessage('Please enter your feedback');
         setIsLoading(false);
         return;
       }
       
-      // Send data to API
-      const response = await fetch('/api/feedback', {
+      const response = await fetch('/api/feedbacks', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: userData.name || 'Anonymous User',
-          feedback: feedback
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: userData.name, feedback: feedback }),
       });
       
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to submit feedback');
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit feedback');
-      }
-      
-      // Show success message
       setFormSubmitted(true);
-      
-      // Reset form after 3 seconds
       setTimeout(() => {
         setFormSubmitted(false);
         setFeedback('');
+        setCharCount(0);
       }, 3000);
       
     } catch (error) {
       setErrorMessage(error.message);
-      console.error('Error submitting feedback:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="contact-container">
-      <div className="contact-wrapper">
-        {/* Main Content */}
-        <div className="contact-content">
-          {/* Contact Information */}
-          <div className="contact-info">
+    <div className="contact-page-container" style={{ backgroundColor: activeTheme.bgPrimary }}>
+      <div className="contact-grid">
+        {/* Left Side: Contact Info */}
+        <div className="contact-info-panel" style={{ color: activeTheme.textPrimary }}>
+          <h1 className="main-title" style={{ color: activeTheme.textPrimary }}>Get in Touch</h1>
+          <p className="main-subtitle" style={{ color: activeTheme.textSecondary }}>
+            For immediate assistance, please contact the relevant department below. For general feedback, please use the form.
+          </p>
 
-
-            {/* Technical Issues */}
-            <div className="contact-section">
-              <h2>Technical Issues</h2>
-              <div className="contact-item">
-                <Phone className="contact-icon" size={20} />
-                <div className="contact-details">
-                  <div className="contact-name">Faraz Shaikh</div>
-                  <div className="contact-value">+919833401654</div>
-                </div>
+          <div className="info-section">
+            <h2 className="section-title" style={{ borderBottomColor: activeTheme.border }}>
+              <Wrench size={20} className="section-icon" style={{ color: activeTheme.accentPrimary }} />
+              Technical Support
+            </h2>
+            <div className="contact-list">
+              <div className="contact-person">
+                <p className="contact-name">Faraz Shaikh</p>
+                <p className="contact-number" style={{ color: activeTheme.textSecondary }}>+91 98334 01654</p>
               </div>
-              <div className="contact-item">
-                <Phone className="contact-icon" size={20} />
-                <div className="contact-details">
-                  <div className="contact-name">Asad Khan</div>
-                  <div className="contact-value">+918080859144</div>
-                </div>
-              </div>
-            </div>
-            
-
-            {/* Qurbani Issues */}
-            <div className="contact-section">
-              <h2>Qurbani Issues</h2>
-              <div className="contact-item">
-                <Phone className="contact-icon" size={20} />
-                <div className="contact-details">
-                  <div className="contact-name">Ilyas Razvi</div>
-                  <div className="contact-value">+918291110603</div>
-                </div>
-              </div>
-              <div className="contact-item">
-                <Phone className="contact-icon" size={20} />
-                <div className="contact-details">
-                  <div className="contact-name">Imran Rathod</div>
-                  <div className="contact-value">+919324896595</div>
-                </div>
-              </div>
-            </div>
-
-            
-
-            {/* Additional Contact Methods */}
-            <div className="contact-methods">
-              <div className="contact-method">
-                <Mail className="method-icon" size={20} />
-                <div className="method-info">
-                  <h3>Email Us</h3>
-                  <p>info@example.com</p>
-                </div>
-              </div>
-              <div className="contact-method">
-                <MapPin className="method-icon" size={20} />
-                <div className="method-info">
-                  <h3>Location</h3>
-                  <p>Mumbai, India</p>
-                </div>
-              </div>
-              <div className="contact-method">
-                <Clock className="method-icon" size={20} />
-                <div className="method-info">
-                  <h3>Office Hours</h3>
-                  <p>Mon - Fri • 9am - 5pm</p>
-                </div>
+              <div className="contact-person">
+                <p className="contact-name">Asad Khan</p>
+                <p className="contact-number" style={{ color: activeTheme.textSecondary }}>+91 80808 59144</p>
               </div>
             </div>
           </div>
 
-          {/* Feedback Form */}
-          <div className="contact-form-section">
-            <form className="contact-form" onSubmit={handleSubmit}>
-              {formSubmitted ? (
-                <div className="form-success">
-                  <center>
-                    <CheckCircle size={'3vw'} className="success-icon" />
-                    <h3>Feedback Submitted!</h3>
-                    <p>Thank you for sharing your thoughts with us.</p>
-                  </center>
-                </div>
-              ) : (
-                <>
-                  <div className="form-group">
-                    <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
-                      <label htmlFor="feedback" className="form-label">Your Feedback</label>
-                    <div className="char-counter">
-                      <span className={charCount > MAX_CHARS * 0.8 ? "char-limit-warning" : ""}>
-                        {charCount}/{MAX_CHARS}
-                      </span>
-                    </div>
-                    </div>
-                    <textarea 
-                      id="feedback" 
-                      className="form-input" 
-                      placeholder="Please share your thoughts, suggestions, or issues..."
-                      value={feedback}
-                      onChange={handleFeedbackChange}
-                      maxLength={MAX_CHARS}
-                      required
-                    ></textarea>
+          <div className="info-section">
+            <h2 className="section-title" style={{ borderBottomColor: activeTheme.border }}>
+              <Building size={20} className="section-icon" style={{ color: activeTheme.accentPrimary }} />
+              Qurbani Matters
+            </h2>
+            <div className="contact-list">
+              <div className="contact-person">
+                <p className="contact-name">Ilyas Razvi</p>
+                <p className="contact-number" style={{ color: activeTheme.textSecondary }}>+91 82911 10603</p>
+              </div>
+              <div className="contact-person">
+                <p className="contact-name">Imran Rathod</p>
+                <p className="contact-number" style={{ color: activeTheme.textSecondary }}>+91 93248 96595</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="general-info-grid">
+            <div className="info-item"><Mail size={18} /><span>info@example.com</span></div>
+            <div className="info-item"><MapPin size={18} /><span>Mumbai, India</span></div>
+            <div className="info-item"><Clock size={18} /><span>Mon - Fri • 9am - 5pm</span></div>
+          </div>
+        </div>
+
+        {/* Right Side: Feedback Form */}
+        <div className="contact-form-panel" style={{ backgroundColor: activeTheme.bgSecondary }}>
+          {formSubmitted ? (
+            <div className="form-success-message">
+              <CheckCircle size={48} style={{ color: activeTheme.success }} />
+              <h3 style={{ color: activeTheme.textPrimary }}>Feedback Submitted!</h3>
+              <p style={{ color: activeTheme.textSecondary }}>Thank you for sharing your thoughts with us.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="feedback-form">
+              <h2 className="form-title" style={{ color: activeTheme.textPrimary }}>Send Us a Message</h2>
+              <p className="form-subtitle" style={{ color: activeTheme.textSecondary }}>
+                Submitting as: <strong style={{ color: activeTheme.accentPrimary }}>{userData.name}</strong>
+              </p>
+              <div className="form-group">
+                <div className="label-wrapper">
+                  <label htmlFor="feedback" className="form-label" style={{ color: activeTheme.textPrimary }}>Your Feedback</label>
+                  <div className="char-counter" style={{ color: activeTheme.textSecondary }}>
+                    <span className={charCount > MAX_CHARS * 0.9 ? "char-limit-warning" : ""}>{charCount}/{MAX_CHARS}</span>
                   </div>
-                  {errorMessage && (
-                    <div className="error-message">{errorMessage}</div>
-                  )}
-                  <button 
-                    type="submit" 
-                    className={`submit-btn ${isLoading ? 'loading' : ''}`}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <span className="loading-text">Sending...</span>
-                    ) : (
-                      <>
-                        <Send size={18} style={{ marginRight: '8px' }} />
-                        Submit Feedback
-                      </>
-                    )}
-                  </button>
-                </>
+                </div>
+                <textarea
+                  id="feedback"
+                  className="form-textarea"
+                  placeholder="Please share your thoughts, suggestions, or issues..."
+                  value={feedback}
+                  onChange={handleFeedbackChange}
+                  maxLength={MAX_CHARS}
+                  required
+                  style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, borderColor: activeTheme.border }}
+                ></textarea>
+              </div>
+              {errorMessage && (
+                <div className="error-message" style={{ backgroundColor: `${activeTheme.error}20`, color: activeTheme.error }}>{errorMessage}</div>
               )}
+              <button
+                type="submit"
+                className="submit-button"
+                disabled={isLoading}
+                style={{ backgroundColor: activeTheme.accentPrimary, color: activeTheme.bgPrimary }}
+              >
+                {isLoading ? 'Sending...' : 'Submit Feedback'}
+                {!isLoading && <Send size={18} />}
+              </button>
             </form>
-          </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-export default ContactPage
+export default ContactPage;
