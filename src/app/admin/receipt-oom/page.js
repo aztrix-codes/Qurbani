@@ -113,7 +113,7 @@ const ReceiptScreen = ({ region = 2 }) => {
       // Create form data for imgbb API
       const formData = new FormData();
       formData.append('image', base64Data);
-      formData.append('key', 'YOUR_IMGBB_API_KEY'); // Replace with your imgbb API key
+      formData.append('key', '5d7b25beb20889d2109afe5aa0e19b31'); // Replace with your imgbb API key
       
       // Upload to imgbb
       const response = await fetch('https://api.imgbb.com/1/upload', {
@@ -686,12 +686,7 @@ const ReceiptScreen = ({ region = 2 }) => {
                     Area Incharge
                   </div>
                   <div className="recordValue" style={{ color: activeTheme.textPrimary }}>
-                    {(() => {
-                      const matchedArea = areasList.find(
-                        (area) => area.name === userViewDetail?.area_name
-                      );
-                      return matchedArea ? matchedArea.area_incharge : 'N/A';
-                    })()}
+                    {userViewDetail?.area_incharge || 'N/A'}  
                   </div>
                 </div>
                 <div className="recordItem">
@@ -810,7 +805,7 @@ const ReceiptScreen = ({ region = 2 }) => {
                           className="recordTableCell"
                           style={{ color: activeTheme.textPrimary }}
                         >
-                          {record.type || 'Qurbani'}
+                          {record.type === 1 ? 'Qurbani' : record.type === 2 ? 'Aqeeqah Boy' : 'Aqeeqah Girl'}
                         </div>
                         <div className="recordTableCell">
                           <div
@@ -1315,12 +1310,6 @@ const ReceiptScreen = ({ region = 2 }) => {
                       className="receiptTableHeaderCell"
                       style={{ color: activeTheme.textSecondary }}
                     >
-                      Purpose
-                    </div>
-                    <div
-                      className="receiptTableHeaderCell"
-                      style={{ color: activeTheme.textSecondary }}
-                    >
                       Area
                     </div>
                     <div
@@ -1380,12 +1369,6 @@ const ReceiptScreen = ({ region = 2 }) => {
                               View Image
                             </a>
                           )}
-                        </div>
-                        <div
-                          className="receiptTableCell"
-                          style={{ color: activeTheme.textPrimary }}
-                        >
-                          {receipt.purpose}
                         </div>
                         <div
                           className="receiptTableCell"

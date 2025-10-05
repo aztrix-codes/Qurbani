@@ -74,7 +74,7 @@ CREATE TABLE customers (
     name VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NULL,
     email VARCHAR(255) NULL,
-    type INT DEFAULT 1,
+    type INT DEFAULT 1, -- 1=Qurbani, 2=Aqeeqah Boy, 3=Aqeeqah Girl
     region INT DEFAULT 2,
     user_name VARCHAR(255) NOT NULL,
     area_name VARCHAR(255) NOT NULL,

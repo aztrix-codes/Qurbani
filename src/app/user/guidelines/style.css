@@ -1,0 +1,46 @@
+/* Guidelines Page Specific Styles */
+.guideline-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.guideline-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.guideline-item {
+  transition: background-color 0.2s ease;
+}
+
+.guideline-item:hover {
+  background-color: #f8fafc;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .guideline-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .guideline-header {
+    padding: 1rem;
+  }
+  
+  .guideline-content {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .guideline-title {
+    font-size: 1.25rem;
+  }
+  
+  .guideline-list {
+    padding-left: 1rem;
+  }
+  
+  .guideline-list li {
+    margin-bottom: 0.75rem;
+  }
+}
