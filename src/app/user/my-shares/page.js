@@ -21,7 +21,7 @@ const Shimmer = () => {
     );
     return (
          <div className="my-shares-container" style={{ backgroundColor: activeTheme.bgPrimary }}>
-            <div className="content-wrapper" style={{ backgroundColor: activeTheme.bgSecondary, borderColor: activeTheme.border }}>
+            <div className="content-wrapper" style={{ backgroundColor: activeTheme.bgPrimary }}>
                 <div className="header">
                     <div className="header-left">
                         <div className="shimmer-line" style={{ backgroundColor: activeTheme.hover, height: '2rem', width: '250px', borderRadius: '0.5rem' }} />
@@ -153,7 +153,7 @@ export default function MySharesPage() {
   
   return (
     <div className="my-shares-container" style={{ backgroundColor: activeTheme.bgPrimary }}>
-      <div className="content-wrapper" style={{ backgroundColor: activeTheme.bgSecondary, borderColor: activeTheme.border }}>
+      <div className="content-wrapper" style={{ backgroundColor: activeTheme.bgPrimary, borderColor: activeTheme.border }}>
         <div className="header">
           <div className="header-left">
             <h1 className="title" style={{ color: activeTheme.textPrimary }}>My Submitted Shares</h1>
@@ -168,7 +168,7 @@ export default function MySharesPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
               style={{
-                backgroundColor: activeTheme.bgPrimary,
+                backgroundColor: activeTheme.bgSecondary,
                 color: activeTheme.textPrimary,
                 borderColor: activeTheme.border
               }}
@@ -179,7 +179,7 @@ export default function MySharesPage() {
         {error && <p className="error-message" style={{ color: activeTheme.error }}>Error: {error}</p>}
 
         <div className="table-container">
-          <div className="table-header" style={{ borderBottomColor: activeTheme.border, color: activeTheme.textSecondary }}>
+          <div className="table-header" style={{ borderBottomColor: activeTheme.border, color: activeTheme.textSecondary, backgroundColor: activeTheme.bgSecondary }}>
             <div className="table-cell">Receipt #</div>
             <div className="table-cell">Name</div>
             <div className="table-cell">Phone</div>

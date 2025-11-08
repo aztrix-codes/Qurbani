@@ -1,12 +1,10 @@
 .my-shares-container {
-  padding: 1.5vh 1vw;
   height: 100%;
   box-sizing: border-box;
 }
 
 .content-wrapper {
   padding: 1vw;
-  border: 1px solid;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   height: 100%;
   display: flex;
@@ -160,9 +158,6 @@
 }
 
 @media (max-width: 768px) {
-  .my-shares-container {
-    padding: 1vh 1.5vw;
-  }
   .content-wrapper {
     padding: 1rem;
   }

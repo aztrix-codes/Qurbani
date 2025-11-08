@@ -13,10 +13,9 @@ const hissaOptions = [
   { value: 3, label: "Aqeeqah (Girl)" }
 ];
 
-// Helper to create a clean, default card state
 const createInitialCards = () => Array.from({ length: 7 }, (_, i) => ({
   id: i + 1,
-  type: 1, // Default to Qurbani
+  type: 1,
   text: "",
   isPaired: false,
   pairId: null,
@@ -39,11 +38,10 @@ export default function AddSharesPage() {
       const storedUserData = JSON.parse(localStorage.getItem('userData'));
       if (storedUserData) {
         setUserData(storedUserData);
-        // Set default region based on user's permissions
         if (storedUserData.regions_incharge_of === 1) {
-            setRegion(1); // Mumbai only
+            setRegion(1);
         } else {
-            setRegion(2); // OOM or Both, default to OOM
+            setRegion(2);
         }
       } else {
         router.replace('/auth/user');
@@ -67,16 +65,12 @@ export default function AddSharesPage() {
   
   const totalUsedHissas = calculateTotalWeight(hissaCards);
 
-
   const handleTypeChange = (id, newTypeStr) => {
     const newType = Number(newTypeStr);
     setError(null);
 
     setHissaCards(prev => {
-        const cards = JSON.parse(JSON.stringify(prev)); // Deep copy
-        const currentCard = cards.find(c => c.id === id);
-        
-        // Clear old pairs originating from this card
+        const cards = JSON.parse(JSON.stringify(prev));
         const newCards = cards.map(c => c.pairId === id ? {...createInitialCards()[c.id-1]} : c);
         const cardToUpdate = newCards.find(c => c.id === id);
         
@@ -89,12 +83,11 @@ export default function AddSharesPage() {
                     ...newCards[nextCardIndex], text: cardToUpdate.text, type: 2, isPaired: true, pairId: id,
                 };
             } else {
-                setError("No available slot next to this card for an Aqeeqah (Boy) pair. Please clear the next card.");
-                return prev; // Revert change if no space
+                setError("No available slot next to this card for an Aqeeqah (Boy) pair. Please clear a subsequent card.");
+                return prev;
             }
         }
         
-        // Final check on total weight
         if (calculateTotalWeight(newCards) > 7) {
             setError("This change would exceed the 7 hissa limit.");
             return prev;
@@ -110,7 +103,6 @@ export default function AddSharesPage() {
             const mainCard = newCards.find(c => c.id === id);
             if (mainCard) mainCard.text = text;
 
-            // If it's an Aqeeqah boy, mirror the text to its pair
             if (mainCard && mainCard.type === 2) {
                 const pairedCard = newCards.find(c => c.pairId === id);
                 if (pairedCard) pairedCard.text = text;
@@ -124,13 +116,11 @@ export default function AddSharesPage() {
         const newCards = JSON.parse(JSON.stringify(prev));
         const cardToClear = newCards.find(c => c.id === id);
         
-        // If the card has a pair, clear the pair too
         const pairedCard = newCards.find(c => c.pairId === id);
         if(pairedCard) {
             Object.assign(pairedCard, createInitialCards()[pairedCard.id - 1]);
         }
         
-        // Reset the card itself
         Object.assign(cardToClear, createInitialCards()[id - 1]);
         return newCards;
     });
@@ -195,56 +185,66 @@ export default function AddSharesPage() {
           </button>
         </div>
         
-        <div className="input-section">
-          <select 
-            className="form-input"
-            value={region}
-            onChange={(e) => setRegion(Number(e.target.value))}
-            style={{ backgroundColor: activeTheme.bgSecondary, color: activeTheme.textPrimary, borderColor: activeTheme.border }}
-          >
-            {userData?.regions_incharge_of !== 1 && <option value={2}>Out of Mumbai</option>}
-            {userData?.regions_incharge_of !== 2 && <option value={1}>Mumbai</option>}
-          </select>
-          
-          <input 
-            type="number" 
-            placeholder="Enter Receipt Number *" 
-            className="form-input"
-            value={receiptNumber}
-            onChange={(e) => setReceiptNumber(e.target.value)}
-            required
-            style={{ backgroundColor: activeTheme.bgSecondary, color: activeTheme.textPrimary, borderColor: activeTheme.border }}
-          />
-          
-          <input 
-            type="tel" 
-            placeholder="Enter Mobile Number (Optional)" 
-            className="form-input"
-            value={mobileNumber}
-            onChange={(e) => setMobileNumber(e.target.value)}
-            style={{ backgroundColor: activeTheme.bgSecondary, color: activeTheme.textPrimary, borderColor: activeTheme.border }}
-          />
+        <div className="form-section" style={{ borderColor: activeTheme.border, backgroundColor: activeTheme.bgSecondary }}>
+            <div className="input-section">
+                <div className="select-wrapper" style={{ '--arrow-color': activeTheme.textSecondary }}>
+                    <select 
+                        className="form-input"
+                        value={region}
+                        onChange={(e) => setRegion(Number(e.target.value))}
+                        style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, borderColor: activeTheme.border }}
+                    >
+                        {userData?.regions_incharge_of !== 1 && <option value={2}>Out of Mumbai</option>}
+                        {userData?.regions_incharge_of !== 2 && <option value={1}>Mumbai</option>}
+                    </select>
+                </div>
+                
+                <input 
+                    type="text" 
+                    placeholder="Enter Receipt Number *" 
+                    className="form-input"
+                    value={receiptNumber}
+                    onChange={(e) => setReceiptNumber(e.target.value)}
+                    required
+                    style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, borderColor: activeTheme.border }}
+                />
+                
+                <input 
+                    type="tel" 
+                    placeholder="Enter Mobile Number (Optional)" 
+                    className="form-input"
+                    value={mobileNumber}
+                    onChange={(e) => setMobileNumber(e.target.value)}
+                    style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, borderColor: activeTheme.border }}
+                />
+            </div>
         </div>
         
-        <div className="hissa-counter" style={{ color: activeTheme.textSecondary }}>
-          <span>Hissas Used: {totalUsedHissas} / 7</span>
+        <div className="hissa-counter-wrapper">
+          <div className="hissa-counter" style={{ color: activeTheme.textSecondary }}>
+            <span>Hissas Used: {totalUsedHissas} / 7</span>
+          </div>
         </div>
         
         <div className="cards-container">
           {hissaCards.map((card) => {
-            const isAqeeqahBoy = card.type === 2;
-            const cardStyles = {
-              backgroundColor: activeTheme.bgSecondary,
-              borderColor: activeTheme.border,
-              borderLeftColor: card.isPaired ? activeTheme.neutralMedium : (isAqeeqahBoy ? activeTheme.info : activeTheme.accentPrimary),
+            const getDotColor = () => {
+                if (card.isPaired) return activeTheme.neutralMedium;
+                if (card.type === 2) return activeTheme.info;
+                return activeTheme.accentPrimary;
             };
             
+            const availableOptions = card.id < 7 ? hissaOptions : hissaOptions.filter(o => o.value !== 2);
+
             return (
-              <div key={card.id} className="hissa-card" style={cardStyles}>
+              <div key={card.id} className="hissa-card" style={{ backgroundColor: activeTheme.bgSecondary, borderColor: activeTheme.border }}>
                 <div className="hissa-card-header">
-                  <h3 style={{ color: activeTheme.textSecondary }}>
-                    Hissa {card.id}
-                  </h3>
+                  <div className="hissa-card-title-group">
+                    <div className="hissa-status-dot" style={{ backgroundColor: getDotColor() }}></div>
+                    <h3 style={{ color: activeTheme.textSecondary }}>
+                        Hissa {card.id}
+                    </h3>
+                  </div>
                   {card.text.trim() && !card.isPaired && (
                     <button className="close-button" onClick={() => handleClearCard(card.id)} aria-label="Clear Hissa">
                       <X size={18} style={{ color: activeTheme.textSecondary }}/>
@@ -252,20 +252,22 @@ export default function AddSharesPage() {
                   )}
                 </div>
                 
-                <select 
-                  value={card.type}
-                  onChange={(e) => handleTypeChange(card.id, e.target.value)}
-                  className="form-input"
-                  required
-                  disabled={card.isPaired}
-                   style={{ 
-                       backgroundColor: card.isPaired ? activeTheme.hover : activeTheme.bgPrimary, 
-                       color: card.isPaired ? activeTheme.textSecondary : activeTheme.textPrimary, 
-                       borderColor: activeTheme.border 
-                    }}
-                >
-                  {hissaOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
+                <div className="select-wrapper" style={{ '--arrow-color': activeTheme.textSecondary }}>
+                    <select 
+                      value={card.type}
+                      onChange={(e) => handleTypeChange(card.id, e.target.value)}
+                      className="form-input"
+                      required
+                      disabled={card.isPaired}
+                       style={{ 
+                           backgroundColor: card.isPaired ? activeTheme.hover : activeTheme.bgPrimary, 
+                           color: card.isPaired ? activeTheme.textSecondary : activeTheme.textPrimary, 
+                           borderColor: activeTheme.border 
+                        }}
+                    >
+                      {availableOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                </div>
                 
                 <input 
                   type="text" 
@@ -287,11 +289,10 @@ export default function AddSharesPage() {
           })}
         </div>
         
-        {error && <div className="feedback-message error-message" style={{ backgroundColor: `${activeTheme.error}20`, color: activeTheme.error }}>{error}</div>}
-        {success && <div className="feedback-message success-message" style={{ backgroundColor: `${activeTheme.success}20`, color: activeTheme.success }}>{success}</div>}
+        {error && <div className="feedback-message" style={{ backgroundColor: `${activeTheme.error}20`, color: activeTheme.error }}>{error}</div>}
+        {success && <div className="feedback-message" style={{ backgroundColor: `${activeTheme.success}20`, color: activeTheme.success }}>{success}</div>}
         
       </div>
     </div>
   );
 }
-

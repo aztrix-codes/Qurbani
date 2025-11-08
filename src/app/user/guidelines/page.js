@@ -19,7 +19,7 @@ export default function GuidelinesPage() {
       color: activeTheme.textPrimary,
     },
     card: {
-      backgroundColor: activeTheme.bgPrimary, // Use the lightest background color
+      backgroundColor: activeTheme.bgSecondary, // Use the lightest background color
       borderColor: activeTheme.border,
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', // A softer shadow
     },
