@@ -1,11 +1,16 @@
-import React from 'react'
+'use client'
 
-function page() {
-  return (
-    <div style={{color: "black", justifyContent: 'center', alignItems: 'center', display: 'flex', height: '100vh', fontSize: 100, flex: 1}}>
-      Hellow
-    </div>
-  )
+import React, { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+function UserPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/user/dashboard");
+  }, [router]);
+
+  return null;
 }
 
-export default page
+export default UserPage;

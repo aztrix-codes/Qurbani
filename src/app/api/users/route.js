@@ -1,37 +1,28 @@
 // app/api/users/route.js
 import { NextResponse } from 'next/server';
 import pool from '../db';
+import { checkAuth, checkLockStatus } from '../apiUtils';
 
 export async function GET(request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header missing' },
-        { status: 401 }
-      );
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const { searchParams } = new URL(request.url);
+    const region = searchParams.get('region');
+
+    let query = 'SELECT id, name, area_name, zone_name, regions_incharge_of, phone, email, created_at, area_incharge, zone_incharge, rate_r1, rate_r2, publish FROM users WHERE 1=1';
+    const params = [];
+
+    if (region) {
+      // 0 means incharge of all regions
+      query += ' AND (regions_incharge_of = ? OR regions_incharge_of = 0)';
+      params.push(region);
     }
 
-    const [authType] = authHeader.split(' ');
-    if (!['admin', 'supervisor'].includes(authType.toLowerCase())) {
-      return NextResponse.json(
-        { error: 'Unauthorized access' },
-        { status: 403 }
-      );
-    }
+    query += ' ORDER BY created_at DESC';
 
-    // Get all users with their data (excluding password)
-    const [users] = await pool.query(`
-      SELECT 
-        id, name, phone, email, pfp, 
-        area_name, area_incharge, 
-        zone_name, zone_incharge, 
-        regions_incharge_of, rate_r1, rate_r2, 
-        publish, created_at, updated_at
-      FROM users
-      ORDER BY name ASC
-    `);
-
+    const [users] = await pool.query(query, params);
     return NextResponse.json(users);
 
   } catch (error) {
@@ -45,22 +36,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header missing' },
-        { status: 401 }
-      );
-    }
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
 
-    const [authType] = authHeader.split(' ');
-    // Allow admin or supervisor to create users
-    if (!['admin', 'supervisor'].includes(authType.toLowerCase())) {
-      return NextResponse.json(
-        { error: 'Unauthorized access to create users' },
-        { status: 403 }
-      );
-    }
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
 
     const userData = await request.json();
     
@@ -126,22 +106,11 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header missing' },
-        { status: 401 }
-      );
-    }
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
 
-    const [authType] = authHeader.split(' ');
-    // Allow admin or supervisor to update users
-    if (!['admin', 'supervisor'].includes(authType.toLowerCase())) {
-      return NextResponse.json(
-        { error: 'Unauthorized access to update users' },
-        { status: 403 }
-      );
-    }
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
 
     const userData = await request.json();
     
@@ -237,22 +206,11 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Authorization header missing' },
-        { status: 401 }
-      );
-    }
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
 
-    const [authType] = authHeader.split(' ');
-     // Allow admin or supervisor to delete users
-    if (!['admin', 'supervisor'].includes(authType.toLowerCase())) {
-      return NextResponse.json(
-        { error: 'Unauthorized access to delete users' },
-        { status: 403 }
-      );
-    }
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
 
     const { id } = await request.json();
     

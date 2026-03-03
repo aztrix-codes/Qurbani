@@ -1,16 +1,42 @@
 // app/api/customers/route.js
 import { NextResponse } from 'next/server';
 import pool from '../db';
+import { checkAuth, checkLockStatus } from '../apiUtils';
 
-
-
-// GET all customers
+// GET customers
 export async function GET(request) {
   try {
-    const [customers] = await pool.query(`
-      SELECT * FROM customers
-      ORDER BY created_at DESC
-    `);
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const { searchParams } = new URL(request.url);
+    const region = searchParams.get('region');
+    const status = searchParams.get('status');
+
+    let query = 'SELECT * FROM customers WHERE 1=1';
+    const params = [];
+
+    // Security: If user, restrict to their own records
+    if (authCheck.type === 'user') {
+      if (!authCheck.name) {
+        return NextResponse.json({ error: 'User name required in Authorization header' }, { status: 400 });
+      }
+      query += ' AND user_name = ?';
+      params.push(authCheck.name);
+    }
+
+    if (region) {
+      query += ' AND region = ?';
+      params.push(region);
+    }
+    if (status !== null && status !== undefined) {
+      query += ' AND status = ?';
+      params.push(status === 'true' || status === '1' ? 1 : 0);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [customers] = await pool.query(query, params);
     
     return NextResponse.json(customers);
 
@@ -26,6 +52,12 @@ export async function GET(request) {
 // CREATE new customer
 export async function POST(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
+
     const customerData = await request.json();
     
     // Validate required fields
@@ -35,6 +67,11 @@ export async function POST(request) {
         { error: 'Missing required fields (receipt, name, user_name, area_name, zone_name)' },
         { status: 400 }
       );
+    }
+
+    // Security: Users can only submit for themselves
+    if (authCheck.type === 'user' && customerData.user_name !== authCheck.name) {
+      return NextResponse.json({ error: 'Cannot submit shares for another user' }, { status: 403 });
     }
 
     // Insert new customer
@@ -78,6 +115,12 @@ export async function POST(request) {
 // UPDATE customer
 export async function PUT(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
+
     const customerData = await request.json();
     
     if (!customerData.id) {
@@ -132,9 +175,61 @@ export async function PUT(request) {
   }
 }
 
+// BULK UPDATE or SINGLE UPDATE payment status
+export async function PATCH(request) {
+  try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
+
+    const { ids, payment_status, status } = await request.json();
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'Array of customer IDs required' }, { status: 400 });
+    }
+
+    let fieldToUpdate = '';
+    let valueToSet = null;
+
+    if (payment_status !== undefined) {
+      fieldToUpdate = 'payment_status';
+      valueToSet = payment_status ? 1 : 0;
+    } else if (status !== undefined) {
+      fieldToUpdate = 'status';
+      valueToSet = status ? 1 : 0;
+    }
+
+    if (!fieldToUpdate) {
+      return NextResponse.json({ error: 'No field to update provided' }, { status: 400 });
+    }
+
+    const [result] = await pool.query(
+      `UPDATE customers SET ${fieldToUpdate} = ? WHERE id IN (?)`,
+      [valueToSet, ids]
+    );
+
+    return NextResponse.json({ 
+      message: `Updated ${result.affectedRows} customers`,
+      affectedRows: result.affectedRows 
+    });
+
+  } catch (error) {
+    console.error('Error in bulk update:', error);
+    return NextResponse.json({ error: 'Failed to update customers' }, { status: 500 });
+  }
+}
+
 // DELETE customer
 export async function DELETE(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
+
     const { id } = await request.json();
     
     if (!id) {

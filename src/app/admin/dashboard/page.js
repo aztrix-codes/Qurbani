@@ -19,17 +19,23 @@ function Dashboard() {
   const { activeTheme, isLight } = useTheme();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
   const [lastRefreshed, setLastRefreshed] = useState(null);
   const [isLocked, setIsLocked] = useState(false); 
   const [lockLoading, setLockLoading] = useState(false); 
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isInitial = false) => {
+    if (isInitial) setLoading(true);
+    setIsFetching(true);
     setError(null);
     console.log("Fetching dashboard data from /api/dashboard...");
     try {
-      const response = await fetch("/api/dashboard");
+      const response = await fetch("/api/dashboard", {
+        headers: {
+          'Authorization': 'admin'
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -48,16 +54,22 @@ function Dashboard() {
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError(`Failed to load dashboard data: ${err.message}`);
-      setData(null); 
+      // Don't clear data on refresh error so user can still see last known data
+      if (isInitial) setData(null); 
       setLastRefreshed(null); 
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
+      setIsFetching(false);
     }
   }, []);
 
   const fetchLockStatus = useCallback(async () => {
     try {
-      const response = await fetch("/api/lock");
+      const response = await fetch("/api/lock", {
+        headers: {
+          'Authorization': 'admin'
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -79,6 +91,7 @@ function Dashboard() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'admin'
         },
         body: JSON.stringify({ lock_status: newLockStatus }),
       });
@@ -116,16 +129,46 @@ function Dashboard() {
     fetchLockStatus(); 
   }, [fetchData, fetchLockStatus]);
 
-  const cardData = data ? [
-    { title: 'Animals (Out of Mumbai)', value: data.animals_out_mumbai, secondaryValue: null, key: 'oom_animals' },
-    { title: 'Shares (Out of Mumbai)', value: data.shares_out_mumbai, secondaryValue: formatCurrency(data.total_amount_out_mumbai), key: 'oom_shares' },
-    { title: 'Paid (Out of Mumbai)', value: data.paid_out_mumbai, secondaryValue: formatCurrency(data.paid_amount_out_mumbai), key: 'oom_paid' },
-    { title: 'Pending (Out of Mumbai)', value: data.pending_out_mumbai, secondaryValue: formatCurrency(data.pending_amount_out_mumbai), key: 'oom_pending' },
-    { title: 'Animals (Mumbai)', value: data.animals_mumbai, secondaryValue: null, key: 'mum_animals' },
-    { title: 'Shares (Mumbai)', value: data.shares_mumbai, secondaryValue: formatCurrency(data.total_amount_mumbai), key: 'mum_shares' },
-    { title: 'Paid (Mumbai)', value: data.paid_mumbai, secondaryValue: formatCurrency(data.paid_amount_mumbai), key: 'mum_paid' },
-    { title: 'Pending (Mumbai)', value: data.pending_mumbai, secondaryValue: formatCurrency(data.pending_amount_mumbai), key: 'mum_pending' },
-  ] : [];
+  // Memoize card data to prevent recreation on every render
+  const cardData = React.useMemo(() => {
+    if (!data) return [];
+    return [
+      { title: 'Animals (Out of Mumbai)', value: data.animals_out_mumbai, secondaryValue: null, key: 'oom_animals' },
+      { title: 'Shares (Out of Mumbai)', value: data.shares_out_mumbai, secondaryValue: formatCurrency(data.total_amount_out_mumbai), key: 'oom_shares' },
+      { title: 'Paid (Out of Mumbai)', value: data.paid_out_mumbai, secondaryValue: formatCurrency(data.paid_amount_out_mumbai), key: 'oom_paid' },
+      { title: 'Pending (Out of Mumbai)', value: data.pending_out_mumbai, secondaryValue: formatCurrency(data.pending_amount_out_mumbai), key: 'oom_pending' },
+      { title: 'Animals (Mumbai)', value: data.animals_mumbai, secondaryValue: null, key: 'mum_animals' },
+      { title: 'Shares (Mumbai)', value: data.shares_mumbai, secondaryValue: formatCurrency(data.total_amount_mumbai), key: 'mum_shares' },
+      { title: 'Paid (Mumbai)', value: data.paid_mumbai, secondaryValue: formatCurrency(data.paid_amount_mumbai), key: 'mum_paid' },
+      { title: 'Pending (Mumbai)', value: data.pending_mumbai, secondaryValue: formatCurrency(data.pending_amount_mumbai), key: 'mum_pending' },
+    ];
+  }, [data]);
+
+  // Memoize theme styles to avoid recreation
+  const themeStyles = React.useMemo(() => ({
+    primaryBtn: {
+      backgroundColor: activeTheme.accentPrimary,
+      color: activeTheme.bgPrimary,
+      hoverBg: activeTheme.accentPrimaryDark || activeTheme.accentPrimary
+    },
+    secondaryBtn: {
+      backgroundColor: activeTheme.bgSecondary,
+      color: activeTheme.textPrimary,
+      border: `1px solid ${activeTheme.border}`,
+      hoverBg: activeTheme.hover
+    },
+    lockBtn: {
+      backgroundColor: activeTheme.success,
+      color: activeTheme.bgPrimary,
+      hoverBg: activeTheme.success
+    },
+    unlockBtn: {
+      backgroundColor: activeTheme.bgSecondary,
+      color: activeTheme.textPrimary,
+      border: `1px solid ${activeTheme.border}`,
+      hoverBg: activeTheme.hover
+    }
+  }), [activeTheme]);
 
   if (loading && !data) { 
     return <div className="loadingState" style={{ color: activeTheme.textSecondary }}>Loading Dashboard...</div>;
@@ -149,22 +192,6 @@ function Dashboard() {
     );
   }
 
-  const primaryButtonBg = activeTheme.accentPrimary;
-  const primaryButtonText = activeTheme.bgPrimary; 
-  const primaryButtonHoverBg = activeTheme.accentPrimaryDark || activeTheme.accentPrimary; 
-
-  const secondaryButtonBg = activeTheme.bgSecondary;
-  const secondaryButtonText = activeTheme.textPrimary;
-  const secondaryButtonHoverBg = activeTheme.hover;
-  
-  const lockButtonBg = activeTheme.success;
-  const lockButtonText = activeTheme.bgPrimary;
-  const lockButtonHoverBg = activeTheme.success; 
-
-  const unlockButtonBg = activeTheme.bgSecondary; 
-  const unlockButtonText = activeTheme.textPrimary;
-  const unlockButtonHoverBg = activeTheme.hover;
-
   return (
     <div className="dashboardContainer">
       <div className="dashboardHeader">
@@ -173,20 +200,18 @@ function Dashboard() {
         <div className="headerActions">
           <button 
             className="actionButton refreshButton" 
-            onClick={fetchData} 
-            disabled={loading} 
+            onClick={() => fetchData(false)} 
+            disabled={isFetching} 
             style={{
-              backgroundColor: secondaryButtonBg,
-              color: secondaryButtonText,
-              border: `1px solid ${activeTheme.border}`,
-              opacity: loading ? 0.6 : 1,
-              cursor: loading ? 'not-allowed' : 'pointer'
+              ...themeStyles.secondaryBtn,
+              opacity: isFetching ? 0.6 : 1,
+              cursor: isFetching ? 'not-allowed' : 'pointer'
             }}
-            onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = secondaryButtonHoverBg)}
-            onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = secondaryButtonBg)}
+            onMouseEnter={(e) => !isFetching && (e.currentTarget.style.backgroundColor = themeStyles.secondaryBtn.hoverBg)}
+            onMouseLeave={(e) => !isFetching && (e.currentTarget.style.backgroundColor = themeStyles.secondaryBtn.backgroundColor)}
             title="Refresh Dashboard Data"
           >
-            <RefreshCw size={16} color={secondaryButtonText} /> 
+            <RefreshCw size={16} color={themeStyles.secondaryBtn.color} className={isFetching ? 'animate-spin' : ''} /> 
             {lastRefreshed && (
               <span className="refreshTimestamp" style={{ color: activeTheme.textSecondary }}>
                 {formatTimestamp(lastRefreshed)}
@@ -199,19 +224,19 @@ function Dashboard() {
             onClick={toggleLock} 
             disabled={lockLoading}
             style={{
-              backgroundColor: isLocked ? lockButtonBg : unlockButtonBg,
-              color: isLocked ? lockButtonText : unlockButtonText,
-              border: `1px solid ${isLocked ? lockButtonBg : activeTheme.border}`,
+              backgroundColor: isLocked ? themeStyles.lockBtn.backgroundColor : themeStyles.unlockBtn.backgroundColor,
+              color: isLocked ? themeStyles.lockBtn.color : themeStyles.unlockBtn.color,
+              border: isLocked ? `1px solid ${themeStyles.lockBtn.backgroundColor}` : themeStyles.unlockBtn.border,
               opacity: lockLoading ? 0.6 : 1,
               cursor: lockLoading ? 'not-allowed' : 'pointer'
             }}
-            onMouseEnter={(e) => !lockLoading && (e.currentTarget.style.backgroundColor = isLocked ? lockButtonHoverBg : unlockButtonHoverBg)}
-            onMouseLeave={(e) => !lockLoading && (e.currentTarget.style.backgroundColor = isLocked ? lockButtonBg : unlockButtonBg)}
+            onMouseEnter={(e) => !lockLoading && (e.currentTarget.style.backgroundColor = isLocked ? themeStyles.lockBtn.hoverBg : themeStyles.unlockBtn.hoverBg)}
+            onMouseLeave={(e) => !lockLoading && (e.currentTarget.style.backgroundColor = isLocked ? themeStyles.lockBtn.backgroundColor : themeStyles.unlockBtn.backgroundColor)}
             title={isLocked ? 'Unlock Dashboard' : 'Lock Dashboard'}
           >
             {isLocked ? 
-              <Lock size={16} color={lockButtonText} /> : 
-              <Unlock size={16} color={unlockButtonText} />
+              <Lock size={16} color={themeStyles.lockBtn.color} /> : 
+              <Unlock size={16} color={themeStyles.unlockBtn.color} />
             }
             <span>{lockLoading ? 'Updating...' : (isLocked ? 'Locked' : 'Unlocked')}</span>
           </button>

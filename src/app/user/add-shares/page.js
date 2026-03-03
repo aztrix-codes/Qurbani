@@ -148,7 +148,11 @@ export default function AddSharesPage() {
             status: false, payment_status: false, amount_paid: 0.00
         };
         const count = getHissaWeight(card.type);
-        return Array(count).fill(0).map(() => axios.post('/api/customers', customerData));
+        return Array(count).fill(0).map(() => axios.post('/api/customers', customerData, {
+            headers: {
+                'Authorization': `user ${userData.name}`
+            }
+        }));
     }).flat();
 
     try {

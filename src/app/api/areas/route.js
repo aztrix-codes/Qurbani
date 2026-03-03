@@ -1,16 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '../db';
-
-function checkAuth(authHeader) {
-  if (!authHeader) {
-    return { error: 'Authorization header missing', status: 401 };
-  }
-  const [authType] = authHeader.split(' ');
-  if (!['admin', 'supervisor'].includes(authType.toLowerCase())) {
-    return { error: 'Unauthorized access', status: 403 };
-  }
-  return { authorized: true };
-}
+import { checkAuth, checkLockStatus } from '../apiUtils';
 
 export async function GET(request) {
   try {
@@ -38,6 +28,9 @@ export async function POST(request) {
   try {
     const authCheck = checkAuth(request.headers.get('authorization'));
     if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
 
     const areaData = await request.json();
     
@@ -94,6 +87,9 @@ export async function PUT(request) {
   try {
     const authCheck = checkAuth(request.headers.get('authorization'));
     if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
 
     const areaData = await request.json();
     
@@ -154,6 +150,9 @@ export async function DELETE(request) {
   try {
     const authCheck = checkAuth(request.headers.get('authorization'));
     if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
 
     const { id } = await request.json();
     

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import './style.css';
-import { useTheme } from '../themeContext';
+import { useTheme } from '@/context/themeContext';
 
 // SVG Icons
 const MenuIcon = ({ color }) => (
@@ -112,62 +112,26 @@ export default function UserLayout({ children }) {
     }
   };
 
-  const navBgColor = isLight ? activeTheme.accentPrimaryDark : activeTheme.bgSecondary;
-  const navTextColor = isLight ? themes.dark.textPrimary : activeTheme.textPrimary;
-  const navSecondaryTextColor = isLight ? themes.dark.textSecondary : activeTheme.textSecondary;
-  const navIconColor = isLight ? themes.dark.textSecondary : activeTheme.neutralMedium;
-  const navBorderColor = isLight ? activeTheme.accentPrimary : activeTheme.neutralLight;
-
-  const mobileHeaderBgColor = isLight ? activeTheme.accentPrimaryDark : activeTheme.bgSecondary;
-  const mobileHeaderTextColor = isLight ? themes.dark.textPrimary : activeTheme.textPrimary;
-
   return (
     <div 
         className="userContainer"
-        style={{ backgroundColor: activeTheme.bgPrimary }} 
         suppressHydrationWarning
     >
       {/* Desktop Navigation */}
-      <nav 
-        className="wideNav"
-        style={{
-            backgroundColor: navBgColor,
-        }}
-      >
-        <div 
-            className="navHeader"
-            style={{ borderBottom: `1px solid ${navBorderColor}` }}
-        >
-          <h1 style={{ color: navTextColor }}>User Portal</h1>
+      <nav className="wideNav">
+        <div className="navHeader">
+          <h1>User Portal</h1>
         </div>
 
         <div className="navItems">
           {links.map((link, index) => {
-            const isActive = pathname?.includes(`/user/${link.path}`);
-            const activeLinkColor = isLight ? activeTheme.highlight : activeTheme.accentPrimary;
-            const activeLinkBg = isLight ? 'rgba(255, 255, 255, .1)' : 'rgba(255, 255, 255, 1)';
+            const isActive = pathname === `/user/${link.path}`;
 
             return (
               <Link
                 key={index}
                 href={`/user/${link.path}`}
                 className={`navItem ${isActive ? 'navItemActive' : ''}`}
-                style={{
-                  color: isActive ? activeLinkColor : navSecondaryTextColor,
-                  backgroundColor: isActive ? activeLinkBg : 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                    if (!isActive) {
-                        e.currentTarget.style.backgroundColor = isLight ? 'rgba(255, 255, 255, 0.08)' : activeTheme.hover;
-                        e.currentTarget.style.color = navTextColor;
-                    }
-                }}
-                onMouseLeave={(e) => {
-                    if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = navSecondaryTextColor;
-                    }
-                }}
               >
                 {link.title}
               </Link>
@@ -175,57 +139,43 @@ export default function UserLayout({ children }) {
           })}
         </div>
 
-        <div 
-            className="navFooter"
-            style={{ borderTop: `1px solid ${navBorderColor}` }}
-        >
+        <div className="navFooter">
           <button onClick={logout} className="iconButton" aria-label="Logout">
-            <LogoutIcon color={navIconColor} />
+            <LogoutIcon />
           </button>
           <button onClick={toggleTheme} className="iconButton" aria-label={`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} theme`}>
-            {currentTheme === 'light' ? <MoonIcon color={navIconColor} /> : <SunIcon color={navIconColor} />}
+            {currentTheme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
           <button onClick={toggleFullscreen} className="iconButton" aria-label="Toggle fullscreen">
-            <FullscreenIcon color={navIconColor} />
+            <FullscreenIcon />
           </button>
         </div>
       </nav>
 
       {/* Mobile Header */}
-      <header 
-        className="mobileHeader"
-        style={{ backgroundColor: mobileHeaderBgColor }}
-      >
+      <header className="mobileHeader">
         <button className="hamburger" onClick={toggleMobileNav} aria-label="Toggle menu">
-          <MenuIcon color={mobileHeaderTextColor} />
+          <MenuIcon />
         </button>
-        <h1 style={{ color: mobileHeaderTextColor }}>User Portal</h1>
+        <h1>User Portal</h1>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button onClick={toggleTheme} className="iconButton" aria-label={`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} theme`}>
-              {currentTheme === 'light' ? <MoonIcon color={mobileHeaderTextColor} /> : <SunIcon color={mobileHeaderTextColor} />}
+              {currentTheme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
         </div>
       </header>
 
       {/* Mobile Navigation Drawer */}
-      <div 
-        className={`mobileNav ${mobileNavOpen ? 'open' : ''}`}
-        style={{ backgroundColor: navBgColor }}
-      >
-        <div 
-            className="mobileNavHeader"
-            style={{ borderBottom: `1px solid ${navBorderColor}` }}
-        >
-          <h1 style={{ color: navTextColor }}>User Portal</h1>
+      <div className={`mobileNav ${mobileNavOpen ? 'open' : ''}`}>
+        <div className="mobileNavHeader">
+          <h1>User Portal</h1>
           <button onClick={logout} className="iconButton" aria-label="Logout">
-            <LogoutIcon color={navTextColor} />
+            <LogoutIcon />
           </button>
         </div>
         <div className="navItems">
           {links.map((link, index) => {
-            const isActive = pathname?.includes(`/user/${link.path}`);
-            const activeLinkColor = isLight ? activeTheme.highlight : activeTheme.accentPrimary;
-            const activeLinkBg = isLight ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255,255,255,1)';
+            const isActive = pathname === `/user/${link.path}`;
 
             return (
               <Link
@@ -233,22 +183,6 @@ export default function UserLayout({ children }) {
                 key={index}
                 href={`/user/${link.path}`}
                 className={`navItem ${isActive ? 'navItemActive' : ''}`}
-                style={{
-                  color: isActive ? activeLinkColor : navSecondaryTextColor,
-                  backgroundColor: isActive ? activeLinkBg : 'transparent',
-                }}
-                 onMouseEnter={(e) => {
-                    if (!isActive) {
-                        e.currentTarget.style.backgroundColor = isLight ? 'rgba(255, 255, 255, 0.1)' : activeTheme.hover;
-                        e.currentTarget.style.color = navTextColor;
-                    }
-                }}
-                onMouseLeave={(e) => {
-                    if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = navSecondaryTextColor;
-                    }
-                }}
               >
                 {link.title}
               </Link>
@@ -264,10 +198,7 @@ export default function UserLayout({ children }) {
       ></div>
 
       {/* Main Content Area */}
-      <main 
-        className="userMainContent"
-        style={{ backgroundColor: activeTheme.bgPrimary }} 
-      >
+      <main className="userMainContent">
         {children}
       </main>
     </div>

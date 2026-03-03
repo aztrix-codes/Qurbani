@@ -42,13 +42,6 @@ const ReceiptScreen = ({ region = 2 }) => {
   const fileInputRef = useRef(null);
   const webcamRef = useRef(null);
 
-  // Authentication check
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('superAdminLoggedIn') === 'true';
-    if (!isLoggedIn) {
-      router.replace('/auth/superadmin');
-    }
-  }, [router]);
 
   // Fetch areas
   const fetchAreas = useCallback(async () => {
@@ -64,10 +57,10 @@ const ReceiptScreen = ({ region = 2 }) => {
     }
   }, []);
 
-  // Fetch users
+  // Fetch users (Optimized with region filter)
   const fetchUsers = useCallback(async () => {
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch(`/api/users?region=${region}`, {
         headers: { Authorization: 'admin' },
       });
       if (!response.ok) throw new Error('Failed to fetch users');
@@ -76,24 +69,28 @@ const ReceiptScreen = ({ region = 2 }) => {
     } catch (error) {
       console.error('Error fetching users:', error);
     }
-  }, []);
+  }, [region]);
 
-  // Fetch customers
+  // Fetch customers (Optimized with region and status filter)
   const fetchCustomerData = useCallback(async () => {
     try {
-      const response = await fetch('/api/customers');
+      const response = await fetch(`/api/customers?region=${region}&status=true`, {
+        headers: { Authorization: 'admin' },
+      });
       if (!response.ok) throw new Error('Failed to fetch customers');
       const data = await response.json();
       setCustomerData(data);
     } catch (error) {
       console.error('Error fetching customers:', error);
     }
-  }, []);
+  }, [region]);
 
   // Fetch receipts
   const fetchReceipts = useCallback(async () => {
     try {
-      const response = await fetch('/api/receipts');
+      const response = await fetch('/api/receipts', {
+        headers: { Authorization: 'admin' },
+      });
       if (!response.ok) throw new Error('Failed to fetch receipts');
       const data = await response.json();
       setReceipts(data);
@@ -110,13 +107,18 @@ const ReceiptScreen = ({ region = 2 }) => {
       // Convert base64 image to blob
       const base64Data = imageData.split(',')[1];
       
+      // --- API Endpoints ---
+      const IMGBB_API_KEY = '5d7b25beb20889d2109afe5aa0e19b31';
+      const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+      // ---------------------
+
       // Create form data for imgbb API
       const formData = new FormData();
       formData.append('image', base64Data);
-      formData.append('key', '5d7b25beb20889d2109afe5aa0e19b31'); // Replace with your imgbb API key
+      formData.append('key', IMGBB_API_KEY);
       
       // Upload to imgbb
-      const response = await fetch('https://api.imgbb.com/1/upload', {
+      const response = await fetch(IMGBB_UPLOAD_URL, {
         method: 'POST',
         body: formData
       });
@@ -136,24 +138,23 @@ const ReceiptScreen = ({ region = 2 }) => {
     }
   };
 
-  // Update payment status
+  // Update payment status (Optimized with Bulk API)
   const updatePaymentStatus = async (customerIds) => {
     try {
-      await Promise.all(
-        customerIds.map((id) =>
-          fetch('/api/customers', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: 'admin',
-            },
-            body: JSON.stringify({
-              id,
-              payment_status: true,
-            }),
-          })
-        )
-      );
+      const response = await fetch('/api/customers', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'admin',
+        },
+        body: JSON.stringify({
+          ids: customerIds,
+          payment_status: true,
+        }),
+      });
+      
+      if (!response.ok) throw new Error('Bulk update failed');
+      
       await fetchCustomerData();
       return true;
     } catch (error) {
@@ -188,18 +189,16 @@ const ReceiptScreen = ({ region = 2 }) => {
     }
   };
 
-  // Initial data fetch
+  // Initial data fetch (Reduced polling to 5 mins)
   useEffect(() => {
     fetchAreas();
     fetchUsers();
     fetchCustomerData();
     fetchReceipts();
     const interval = setInterval(() => {
-      fetchAreas();
-      fetchUsers();
       fetchCustomerData();
       fetchReceipts();
-    }, 60000);
+    }, 300000); // 5 minutes
     return () => clearInterval(interval);
   }, [fetchAreas, fetchUsers, fetchCustomerData, fetchReceipts]);
 
@@ -217,12 +216,12 @@ const ReceiptScreen = ({ region = 2 }) => {
     }
   }, [userViewDetail, selectedRowData]);
 
-  // Get zone name from area
-  const getZoneNameFromArea = (areaName) => {
+  // Get zone name from area (Memoized)
+  const getZoneNameFromArea = useCallback((areaName) => {
     if (!areaName) return 'N/A';
     const matchedArea = areasList.find((area) => area.name === areaName);
     return matchedArea ? matchedArea.zone_name : 'Mumbai';
-  };
+  }, [areasList]);
 
   // Modal handlers
   const handleEyeClick = (rowId, rowData, item) => {
@@ -376,58 +375,88 @@ const ReceiptScreen = ({ region = 2 }) => {
     }
   };
 
-  // Filter data for Mumbai region
-  const filteredData = users
-    .filter((item) => item.regions_incharge_of === region || item.regions_incharge_of === 0)
-    .filter((item) =>
-      Object.values(item).some((val) =>
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
+  // Filter users based on search term (Memoized)
+  const filteredUsers = React.useMemo(() => {
+    return users.filter((item) => {
+      const searchStr = searchTerm.toLowerCase();
+      return (
+        String(item.name || '').toLowerCase().includes(searchStr) ||
+        String(item.area_name || '').toLowerCase().includes(searchStr) ||
+        String(item.zone_name || '').toLowerCase().includes(searchStr)
+      );
+    });
+  }, [users, searchTerm]);
 
-  // Group customers by user
-  const groupedCustomers = filteredData.map((user) => {
-    const userCustomers = customerData.filter(
-      (customer) =>
-        customer.user_name === user.name &&
-        customer.region === region &&
-        customer.status
-    );
-    return {
+  // Group customers by user (Optimized with Map and useMemo)
+  const groupedCustomers = React.useMemo(() => {
+    const customerMap = new Map();
+    customerData.forEach(customer => {
+      if (!customerMap.has(customer.user_name)) {
+        customerMap.set(customer.user_name, []);
+      }
+      customerMap.get(customer.user_name).push(customer);
+    });
+
+    return filteredUsers.map(user => ({
       user,
-      customers: userCustomers,
-    };
-  });
+      customers: customerMap.get(user.name) || []
+    }));
+  }, [filteredUsers, customerData]);
 
-  // Calculate statistics
-  const totalUsers = filteredData.length;
-  const totalCustomers = customerData.filter(
-    (customer) => customer.region === region && customer.status
-  ).length;
-  const paidCustomers = customerData.filter(
-    (customer) => customer.region === region && customer.status && customer.payment_status
-  ).length;
-  const pendingCustomers = totalCustomers - paidCustomers;
+  // Calculate statistics (Memoized)
+  const stats = React.useMemo(() => {
+    const totalU = filteredUsers.length;
+    const totalC = customerData.length;
+    const paidC = customerData.filter(c => c.payment_status).length;
+    return {
+      totalUsers: totalU,
+      totalCustomers: totalC,
+      paidCustomers: paidC,
+      pendingCustomers: totalC - paidC
+    };
+  }, [filteredUsers, customerData]);
+
+  // Memoize theme styles to prevent unnecessary garbage collection and pressure
+  const themeStyles = React.useMemo(() => ({
+    container: { backgroundColor: activeTheme.bgPrimary },
+    card: {
+      backgroundColor: activeTheme.bgSecondary,
+      border: `1px solid ${activeTheme.border}`,
+    },
+    header: {
+      backgroundColor: activeTheme.pageHeaderBG,
+      color: activeTheme.pageHeaderText,
+    },
+    statsBorder: { borderTop: `1px solid ${activeTheme.pageHeaderText}33` },
+    statsLabel: { color: `${activeTheme.pageHeaderText}B3` },
+    statsValue: { color: activeTheme.pageHeaderText },
+    tableHeader: {
+      backgroundColor: activeTheme.bgSecondary,
+      borderBottom: `1px solid ${activeTheme.border}`,
+    },
+    tableLabel: { color: activeTheme.textSecondary },
+    dataRowBorder: { borderBottom: `1px solid ${activeTheme.border}20` },
+    textPrimary: { color: activeTheme.textPrimary },
+    accentPrimary: { color: activeTheme.accentPrimary },
+    badge: (hasPaid) => ({
+      backgroundColor: hasPaid ? `${activeTheme.success}20` : `${activeTheme.highlight}30`,
+      color: hasPaid ? activeTheme.success : activeTheme.accentPrimary,
+    })
+  }), [activeTheme]);
 
   return (
     <div
       className="receiptScreenContainer"
-      style={{ backgroundColor: activeTheme.bgPrimary }}
+      style={themeStyles.container}
     >
       <div
         className="receiptScreenCard"
-        style={{
-          backgroundColor: activeTheme.bgSecondary,
-          border: `1px solid ${activeTheme.border}`,
-        }}
+        style={themeStyles.card}
       >
         {/* Header Section */}
         <div
           className="receiptScreenHeader"
-          style={{
-            backgroundColor: activeTheme.pageHeaderBG,
-            color: activeTheme.pageHeaderText,
-          }}
+          style={themeStyles.header}
         >
           <div className="headerContent">
             <div className="headerTitle">
@@ -463,21 +492,21 @@ const ReceiptScreen = ({ region = 2 }) => {
           >
             <div style={{ color: `${activeTheme.pageHeaderText}90` }}>
               Total Users:{' '}
-              <span style={{ color: activeTheme.pageHeaderText }}>{totalUsers}</span>
+              <span style={{ color: activeTheme.pageHeaderText }}>{stats.totalUsers}</span>
             </div>
             <div style={{ color: `${activeTheme.pageHeaderText}90` }}>
               Total Customers:{' '}
               <span style={{ color: activeTheme.pageHeaderText }}>
-                {totalCustomers}
+                {stats.totalCustomers}
               </span>
             </div>
             <div style={{ color: `${activeTheme.pageHeaderText}90` }}>
               Paid:{' '}
-              <span style={{ color: activeTheme.pageHeaderText }}>{paidCustomers}</span>
+              <span style={{ color: activeTheme.pageHeaderText }}>{stats.paidCustomers}</span>
             </div>
             <div style={{ color: `${activeTheme.pageHeaderText}90` }}>
               Pending:{' '}
-              <span style={{ color: activeTheme.pageHeaderText }}>{pendingCustomers}</span>
+              <span style={{ color: activeTheme.pageHeaderText }}>{stats.pendingCustomers}</span>
             </div>
           </div>
         </div>

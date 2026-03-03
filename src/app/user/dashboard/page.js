@@ -49,7 +49,13 @@ export default function DashboardPage() {
     setIsFetching(true);
     setError(null);
     try {
-      const response = await fetch('/api/dashboard');
+      if (!userData?.name) return;
+
+      const response = await fetch('/api/dashboard', {
+        headers: {
+          'Authorization': `user ${userData.name}`
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch dashboard data');
       const data = await response.json();
       setDashboardData(data[0]);
@@ -61,7 +67,7 @@ export default function DashboardPage() {
       // Add a small delay to ensure the animation is visible
       setTimeout(() => setIsFetching(false), 500);
     }
-  }, []);
+  }, [userData]); // Added userData dependency to fetchData
 
   useEffect(() => {
     try {
@@ -70,11 +76,15 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Failed to parse user data from local storage", err);
     }
+  }, []);
 
+  useEffect(() => {
+    if (!userData?.name) return;
+    
     fetchData(true);
     const intervalId = setInterval(() => fetchData(false), 30000);
     return () => clearInterval(intervalId);
-  }, [fetchData]);
+  }, [fetchData, userData?.name]);
 
   const region = userData?.regions_incharge_of;
   const isMumbai = region === 1;

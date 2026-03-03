@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import './style.css';
-import { useTheme } from '../themeContext';
+import { useTheme } from '@/context/themeContext';
 
 // SVG Icons (can be moved to separate components if preferred)
 const MenuIcon = ({ color }) => (
@@ -72,43 +72,41 @@ export default function AdminLayout({ children }) {
     router.replace('/auth/supervisor');
   };
 
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      // For mobile browsers, try multiple methods
       const element = document.documentElement;
-      
       if (element.requestFullscreen) {
         element.requestFullscreen().catch(err => {
           console.log(`Error attempting to enable fullscreen: ${err.message}`);
         });
-      } else if (element.webkitRequestFullscreen) { // Safari
+      } else if (element.webkitRequestFullscreen) {
         element.webkitRequestFullscreen().catch(err => {
           console.log(`Error attempting to enable fullscreen: ${err.message}`);
         });
-      } else if (element.mozRequestFullScreen) { // Firefox
+      } else if (element.mozRequestFullScreen) {
         element.mozRequestFullScreen().catch(err => {
           console.log(`Error attempting to enable fullscreen: ${err.message}`);
         });
-      } else if (element.msRequestFullscreen) { // IE/Edge
+      } else if (element.msRequestFullscreen) {
         element.msRequestFullscreen().catch(err => {
           console.log(`Error attempting to enable fullscreen: ${err.message}`);
         });
       }
     } else {
-      // Exit fullscreen
       if (document.exitFullscreen) {
         document.exitFullscreen().catch(err => {
           console.log(`Error attempting to exit fullscreen: ${err.message}`);
         });
-      } else if (document.webkitExitFullscreen) { // Safari
+      } else if (document.webkitExitFullscreen) {
         document.webkitExitFullscreen().catch(err => {
           console.log(`Error attempting to exit fullscreen: ${err.message}`);
         });
-      } else if (document.mozCancelFullScreen) { // Firefox
+      } else if (document.mozCancelFullScreen) {
         document.mozCancelFullScreen().catch(err => {
           console.log(`Error attempting to exit fullscreen: ${err.message}`);
         });
-      } else if (document.msExitFullscreen) { // IE/Edge
+      } else if (document.msExitFullscreen) {
         document.msExitFullscreen().catch(err => {
           console.log(`Error attempting to exit fullscreen: ${err.message}`);
         });
@@ -116,64 +114,26 @@ export default function AdminLayout({ children }) {
     }
   };
 
-  // Determine colors based on theme, especially for nav where light theme uses dark accent bg
-  const navBgColor = isLight ? activeTheme.accentPrimaryDark : activeTheme.bgSecondary;
-  // Use light text/icons on the dark nav background in light mode
-  const navTextColor = isLight ? themes.dark.textPrimary : activeTheme.textPrimary;
-  const navSecondaryTextColor = isLight ? themes.dark.textSecondary : activeTheme.textSecondary;
-  const navIconColor = isLight ? themes.dark.textSecondary : activeTheme.neutralMedium;
-  const navBorderColor = isLight ? activeTheme.accentPrimary : activeTheme.neutralLight;
-
-  const mobileHeaderBgColor = isLight ? activeTheme.accentPrimaryDark : activeTheme.bgSecondary;
-  const mobileHeaderTextColor = isLight ? themes.dark.textPrimary : activeTheme.textPrimary;
-
   return (
     <div 
         className="adminContainer"
-        style={{ backgroundColor: activeTheme.bgPrimary }} 
         suppressHydrationWarning
     >
       {/* Desktop Navigation */}
-      <nav 
-        className="wideNav"
-        style={{
-            backgroundColor: navBgColor,
-        }}
-      >
-        <div 
-            className="navHeader"
-            style={{ borderBottom: `1px solid ${navBorderColor}` }}
-        >
-          <h1 style={{ color: navTextColor }}>Supervisor</h1>
+      <nav className="wideNav">
+        <div className="navHeader">
+          <h1>Supervisor</h1>
         </div>
 
         <div className="navItems">
           {links.map((link, index) => {
             const isActive = pathname?.includes(`/supervisor/${link.path}`);
-            const activeLinkColor = isLight ? activeTheme.highlight : activeTheme.accentPrimary;
-            const activeLinkBg = isLight ? 'rgba(255, 255, 255, .1)' : 'rgba(255, 255, 255, 1)';
 
             return (
               <Link
                 key={index}
                 href={`/supervisor/${link.path}`}
                 className={`navItem ${isActive ? 'navItemActive' : ''}`}
-                style={{
-                  color: isActive ? activeLinkColor : navSecondaryTextColor,
-                  backgroundColor: isActive ? activeLinkBg : 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                    if (!isActive) {
-                        e.currentTarget.style.backgroundColor = isLight ? 'rgba(255, 255, 255, 0.08)' : activeTheme.hover;
-                        e.currentTarget.style.color = navTextColor;
-                    }
-                }}
-                onMouseLeave={(e) => {
-                    if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = navSecondaryTextColor;
-                    }
-                }}
               >
                 {link.title}
               </Link>
@@ -181,60 +141,43 @@ export default function AdminLayout({ children }) {
           })}
         </div>
 
-        <div 
-            className="navFooter"
-            style={{ borderTop: `1px solid ${navBorderColor}` }}
-        >
+        <div className="navFooter">
           <button onClick={logout} className="iconButton" aria-label="Logout">
-            <LogoutIcon color={navIconColor} />
+            <LogoutIcon />
           </button>
           <button onClick={toggleTheme} className="iconButton" aria-label={`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} theme`}>
-            {currentTheme === 'light' ? <MoonIcon color={navIconColor} /> : <SunIcon color={navIconColor} />}
+            {currentTheme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
           <button onClick={toggleFullscreen} className="iconButton" aria-label="Toggle fullscreen">
-            <FullscreenIcon color={navIconColor} />
+            <FullscreenIcon />
           </button>
         </div>
       </nav>
 
       {/* Mobile Header */}
-      <header 
-        className="mobileHeader"
-        style={{ backgroundColor: mobileHeaderBgColor }}
-      >
+      <header className="mobileHeader">
         <button className="hamburger" onClick={toggleMobileNav} aria-label="Toggle menu">
-          <MenuIcon color={mobileHeaderTextColor} />
+          <MenuIcon />
         </button>
-        <h1 style={{ color: mobileHeaderTextColor }}>Supervisor</h1>
+        <h1>Supervisor</h1>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button onClick={toggleTheme} className="iconButton" aria-label={`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} theme`}>
-              {currentTheme === 'light' ? <MoonIcon color={mobileHeaderTextColor} /> : <SunIcon color={mobileHeaderTextColor} />}
+              {currentTheme === 'light' ? <MoonIcon /> : <SunIcon />}
           </button>
-          {/* <button onClick={toggleFullscreen} className="iconButton" aria-label="Toggle fullscreen">
-            <FullscreenIcon color={mobileHeaderTextColor} />
-          </button> */}
         </div>
       </header>
 
       {/* Mobile Navigation Drawer */}
-      <div 
-        className={`mobileNav ${mobileNavOpen ? 'open' : ''}`}
-        style={{ backgroundColor: navBgColor }}
-      >
-        <div 
-            className="mobileNavHeader"
-            style={{ borderBottom: `1px solid ${navBorderColor}` }}
-        >
-          <h1 style={{ color: navTextColor }}>Supervisor</h1>
+      <div className={`mobileNav ${mobileNavOpen ? 'open' : ''}`}>
+        <div className="mobileNavHeader">
+          <h1>Supervisor</h1>
           <button onClick={logout} className="iconButton" aria-label="Logout">
-            <LogoutIcon color={navTextColor} />
+            <LogoutIcon />
           </button>
         </div>
         <div className="navItems">
           {links.map((link, index) => {
             const isActive = pathname?.includes(`/supervisor/${link.path}`);
-            const activeLinkColor = isLight ? activeTheme.highlight : activeTheme.accentPrimary;
-            const activeLinkBg = isLight ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255,255,255,1)';
 
             return (
               <Link
@@ -242,22 +185,6 @@ export default function AdminLayout({ children }) {
                 key={index}
                 href={`/supervisor/${link.path}`}
                 className={`navItem ${isActive ? 'navItemActive' : ''}`}
-                style={{
-                  color: isActive ? activeLinkColor : navSecondaryTextColor,
-                  backgroundColor: isActive ? activeLinkBg : 'transparent',
-                }}
-                 onMouseEnter={(e) => {
-                    if (!isActive) {
-                        e.currentTarget.style.backgroundColor = isLight ? 'rgba(255, 255, 255, 0.1)' : activeTheme.hover;
-                        e.currentTarget.style.color = navTextColor;
-                    }
-                }}
-                onMouseLeave={(e) => {
-                    if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = navSecondaryTextColor;
-                    }
-                }}
               >
                 {link.title}
               </Link>
@@ -273,10 +200,7 @@ export default function AdminLayout({ children }) {
       ></div>
 
       {/* Main Content Area */}
-      <main 
-        className="adminMainContent"
-        style={{ backgroundColor: activeTheme.bgPrimary }} 
-      >
+      <main className="adminMainContent">
         {children}
       </main>
     </div>

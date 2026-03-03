@@ -44,7 +44,11 @@ export default function FeedbackComponent() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const response = await axios.get(API_FEEDBACKS);
+      const response = await axios.get(API_FEEDBACKS, {
+        headers: {
+          'Authorization': 'admin'
+        }
+      });
       const mappedFeedback = response.data.map(fb => ({
           ...fb,
           formattedDate: formatDate(fb.created_at)
@@ -96,9 +100,8 @@ export default function FeedbackComponent() {
     }
   };
 
-  // Theme-based styles (Inline styles for dynamic theme properties)
-  const themeStyles = {
-    // Keep existing theme style definitions from previous version...
+  // Memoize theme styles to avoid recreation and re-render pressure
+  const themeStyles = React.useMemo(() => ({
     container: { backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, padding: '25px', fontFamily: '"Inter", sans-serif' },
     title: { color: activeTheme.accentPrimary, paddingBottom: '10px', marginBottom: '15px', fontSize: '1.8rem', fontWeight: '600' },
     formSection: { backgroundColor: activeTheme.bgSecondary, padding: '20px', borderRadius: '8px', boxShadow: `0 4px 15px ${activeTheme.shadow}15` },
@@ -120,7 +123,7 @@ export default function FeedbackComponent() {
     message: { padding: '10px 15px', borderRadius: '6px', marginTop: '15px', textAlign: 'center', fontSize: '0.95rem' },
     errorMessage: { backgroundColor: `${activeTheme.error}20`, color: activeTheme.error, border: `1px solid ${activeTheme.error}50` },
     successMessage: { backgroundColor: `${activeTheme.success}20`, color: activeTheme.success, border: `1px solid ${activeTheme.success}50` }
-  };
+  }), [activeTheme, isLight]);
 
   return (
     <div className="feedback-page-container" style={themeStyles.container}>

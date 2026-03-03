@@ -18,7 +18,11 @@ const UserSummary = ({ region = 2 }) => {
   const fetchUserSummary = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/user_summary');
+      const response = await axios.get('/api/user_summary', {
+        headers: {
+          'Authorization': 'admin'
+        }
+      });
       console.log('API Response:', response.data);
       setUserData(response.data);
       setLoading(false);
@@ -32,29 +36,25 @@ const UserSummary = ({ region = 2 }) => {
     fetchUserSummary();
   }, []);
 
-  // Filter data based on region and search term
-  const filteredData = userData.filter(item => {
-    // Include users with region = 0 (both regions) or matching region
-    const hasRelevantRegion = item.region === 0 || item.region === region;
+  // Filter data based on region and search term (Memoized for performance)
+  const filteredData = React.useMemo(() => {
+    return userData.filter(item => {
+      // Include users with region = 0 (both regions) or matching region
+      const hasRelevantRegion = item.region === 0 || item.region === region;
 
-    // Apply search filter only if searchTerm is non-empty
-    const matchesSearch = searchTerm.trim()
-      ? Object.entries(item).some(([key, val]) =>
-          ['user_name', 'area_name', 'zone_name'].includes(key) &&
-          val && String(val).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : true;
+      if (!hasRelevantRegion) return false;
 
-    console.log(`Filter Check (User ${item.user_id}, ${item.user_name}):`, {
-      region,
-      itemRegion: item.region,
-      hasRelevantRegion,
-      matchesSearch,
-      searchTerm
+      // Apply search filter
+      if (!searchTerm.trim()) return true;
+      
+      const searchStr = searchTerm.toLowerCase();
+      return (
+        String(item.user_name || '').toLowerCase().includes(searchStr) ||
+        String(item.area_name || '').toLowerCase().includes(searchStr) ||
+        String(item.zone_name || '').toLowerCase().includes(searchStr)
+      );
     });
-
-    return hasRelevantRegion && matchesSearch;
-  });
+  }, [userData, region, searchTerm]);
 
   console.log('Filtered Data:', filteredData.map(item => ({
     user_id: item.user_id,
@@ -120,24 +120,41 @@ const UserSummary = ({ region = 2 }) => {
     }
   };
 
+  // Memoize theme styles to avoid recreation and re-render pressure
+  const themeStyles = React.useMemo(() => ({
+    container: { backgroundColor: activeTheme.bgPrimary },
+    card: {
+      backgroundColor: activeTheme.bgSecondary,
+      border: `1px solid ${activeTheme.border}`,
+    },
+    header: {
+      backgroundColor: activeTheme.pageHeaderBG,
+      color: activeTheme.pageHeaderText,
+    },
+    tableHeader: {
+      backgroundColor: activeTheme.bgSecondary,
+      borderBottom: `1px solid ${activeTheme.border}`,
+    },
+    tableLabel: { color: activeTheme.textSecondary },
+    dataRowBorder: { borderBottom: `1px solid ${activeTheme.border}20` },
+    textPrimary: { color: activeTheme.textPrimary },
+    accentPrimary: { color: activeTheme.accentPrimary },
+    amountPaid: { color: activeTheme.success },
+    amountPending: { color: activeTheme.error }
+  }), [activeTheme]);
+
   return (
     <div 
-      className="userSummaryContainer"
-      style={{ backgroundColor: activeTheme.bgPrimary }}
+      className="userSummaryContainer" 
+      style={themeStyles.container}
     >
       <div 
-        className="userSummaryCard"
-        style={{
-          backgroundColor: activeTheme.bgSecondary,
-          border: `1px solid ${activeTheme.border}`,
-        }}
+        className="userSummaryCard" 
+        style={themeStyles.card}
       >
         <div 
-          className="userSummaryHeader"
-          style={{
-            backgroundColor: activeTheme.pageHeaderBG,
-            color: activeTheme.pageHeaderText,
-          }}
+          className="userSummaryHeader" 
+          style={themeStyles.header}
         >
           <div className="headerContent">
             <div className="headerTitle">

@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import pool from '../db';
+import { checkAuth } from '../apiUtils';
 
 export async function GET(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
     const [results] = await pool.query(`
       SELECT * FROM dashboard
     `);

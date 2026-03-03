@@ -1,9 +1,16 @@
-// app/api/feedback/route.js
 import { NextResponse } from 'next/server';
 import pool from '../db';
+import { checkAuth } from '../apiUtils';
 
 export async function GET(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    if (!['admin', 'supervisor'].includes(authCheck.type)) {
+      return NextResponse.json({ error: 'Unauthorized: Admin or Supervisor access required' }, { status: 403 });
+    }
+
     // Get all feedback with sorting by newest first
     const [feedback] = await pool.query(`
       SELECT * FROM feedback
@@ -61,6 +68,13 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    if (authCheck.type !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
+    }
+
     const { id } = await request.json();
     
     if (!id) {

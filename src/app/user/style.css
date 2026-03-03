@@ -1,4 +1,44 @@
-/* style.css */
+:root {
+    --bg-primary: #FAFDF9;
+    --bg-secondary: #F2F8F0;
+    --text-primary: #1B3B36;
+    --text-secondary: #4A6B47;
+    --accent-primary: #2D5A47;
+    --accent-primary-dark: #1E4034;
+    --highlight: rgba(255, 255, 255, 0.15);
+    --hover: rgba(255, 255, 255, 0.08);
+    --border: #D1E7DD;
+    --page-header-bg: #1E4034;
+    --page-header-text: #FAFDF9;
+    --shadow: rgba(0, 0, 0, 0.05);
+
+    /* Sidebar/Nav specific */
+    --nav-bg: #1E4034;
+    --nav-text: #F1F5F9;
+    --nav-text-secondary: #94A3B8;
+    --nav-border: #2D5A47;
+}
+
+[data-theme='dark'] {
+    --bg-primary: #0B0D14;
+    --bg-secondary: #141826;
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --accent-primary: #6366F1;
+    --accent-primary-dark: #141826;
+    --highlight: rgba(99, 102, 241, 0.2);
+    --hover: #334155;
+    --border: #1E293B;
+    --page-header-bg: #0B0D14;
+    --page-header-text: #F1F5F9;
+    --shadow: rgba(0, 0, 0, 0.2);
+
+    /* Sidebar/Nav specific */
+    --nav-bg: #141826;
+    --nav-text: #F1F5F9;
+    --nav-text-secondary: #94A3B8;
+    --nav-border: #1E293B;
+}
 
 /* General Container */
 .userContainer {
@@ -8,6 +48,7 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
     position: relative;
+    background-color: var(--bg-primary);
 }
 
 /* ===================== */
@@ -15,20 +56,21 @@
 /* ===================== */
 .wideNav {
     flex: 0 0 280px;
-    min-height: 100vh; /* Changed from height: 100% to ensure full viewport height */
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 2px 0 8px var(--shadow);
     z-index: 10;
     padding: 1.5rem 0 0 0;
-    transition: background-color 0.3s ease, border-right-color 0.3s ease;
+    background-color: var(--nav-bg);
+    border-right: 1px solid var(--nav-border);
     max-width: 16vw;
 }
 
 .navHeader {
     padding: 0 1.5rem 1.5rem;
     margin-bottom: 1.5rem;
-    transition: border-bottom-color 0.3s ease;
+    border-bottom: 1px solid var(--nav-border);
 }
 
 .navHeader h1 {
@@ -36,7 +78,7 @@
     font-weight: 600;
     margin: 0;
     letter-spacing: 0.01vw;
-    transition: color 0.3s ease;
+    color: var(--nav-text);
 }
 
 .navItems {
@@ -55,11 +97,18 @@
     align-items: center;
     margin-bottom: 1vw;
     cursor: pointer;
+    color: var(--nav-text-secondary);
+}
+
+.navItem:hover {
+    background-color: var(--hover);
+    color: var(--nav-text);
 }
 
 .navItemActive {
+    background-color: var(--highlight) !important;
+    color: var(--nav-text) !important;
     font-weight: 600;
-    position: relative;
 }
 
 .navFooter {
@@ -69,7 +118,7 @@
     align-items: center;
     gap: 2vw;
     padding: 1vw;
-    transition: border-top-color 0.3s ease;
+    border-top: 1px solid var(--nav-border);
 }
 
 .iconButton {
@@ -98,7 +147,7 @@
     flex: 1;
     height: 100%;
     overflow-y: auto;
-    transition: background-color 0.3s ease;
+    background-color: var(--bg-primary);
 }
 
 /* ===================== */
@@ -112,16 +161,16 @@
     position: fixed;
     width: 100%;
     z-index: 100;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px var(--shadow);
     height: 60px;
-    transition: background-color 0.3s ease;
+    background-color: var(--page-header-bg);
 }
 
 .mobileHeader h1 {
     font-size: 1.2rem;
     font-weight: 700;
     letter-spacing: 0.5px;
-    transition: color 0.3s ease;
+    color: var(--page-header-text);
 }
 
 .hamburger {
@@ -131,10 +180,10 @@
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 4px;
-    transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: var(--page-header-text);
 }
 
 .hamburger svg {
@@ -150,9 +199,10 @@
     width: 280px;
     height: 100%;
     z-index: 101;
-    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     padding-top: 1.5rem;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 4px 0 15px var(--shadow);
+    background-color: var(--nav-bg);
 }
 
 .mobileNavHeader {
@@ -162,13 +212,13 @@
     margin-bottom: 1.5rem;
     padding: 0rem 1.5rem 1rem 1.5rem;
     align-items: center;
-    transition: border-bottom-color 0.3s ease;
+    border-bottom: 1px solid var(--nav-border);
 }
 
 .mobileNavHeader h1 {
     font-size: 1.5rem;
     text-align: left;
-    transition: color 0.3s ease;
+    color: var(--nav-text);
 }
 
 .mobileNav.open {

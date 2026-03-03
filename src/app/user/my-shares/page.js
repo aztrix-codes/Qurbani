@@ -58,23 +58,28 @@ export default function MySharesPage() {
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    // Get user data from localStorage
+    // Initial load from localStorage
     try {
       const storedUserData = localStorage.getItem('userData');
       if (storedUserData) {
         setUserData(JSON.parse(storedUserData));
-      } else {
-        // Handle case where user data is not found, maybe redirect
-        console.warn("User data not found in local storage.");
       }
     } catch (e) {
       console.error("Could not parse user data from local storage", e);
     }
-    
+  }, []);
 
+  useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch('/api/customers');
+        if (!userData?.name) return;
+
+        const response = await fetch('/api/customers', {
+          headers: {
+            'Authorization': `user ${userData.name}`
+          }
+        });
+        
         if (!response.ok) {
           throw new Error('Failed to fetch data');
         }
@@ -87,14 +92,12 @@ export default function MySharesPage() {
       }
     };
 
-    fetchCustomers();
-  }, []);
+    if (userData?.name) {
+      fetchCustomers();
+    }
+  }, [userData?.name]); // Use specific primitive property as dependency
 
-  const userCustomers = userData
-    ? customers.filter(customer => customer.user_name === userData.name)
-    : [];
-
-  const filteredCustomers = userCustomers.filter(customer =>
+  const filteredCustomers = customers.filter(customer =>
     (customer.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (customer.receipt?.toString() || '').includes(searchTerm) ||
     (customer.phone && customer.phone.includes(searchTerm))

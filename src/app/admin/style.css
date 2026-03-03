@@ -1,3 +1,45 @@
+:root {
+    --bg-primary: #FAFDF9;
+    --bg-secondary: #F2F8F0;
+    --text-primary: #1B3B36;
+    --text-secondary: #4A6B47;
+    --accent-primary: #2D5A47;
+    --accent-primary-dark: #1E4034;
+    --highlight: rgba(255, 255, 255, 0.15); /* Soft highlight on dark background */
+    --hover: rgba(255, 255, 255, 0.08);    /* Soft hover on dark background */
+    --border: #D1E7DD;
+    --page-header-bg: #1E4034;
+    --page-header-text: #FAFDF9;
+    --shadow: rgba(0, 0, 0, 0.05);
+
+    /* Original Sidebar Colors for Light Mode (Dark Sidebar) */
+    --nav-bg: #1E4034;
+    --nav-text: #F1F5F9;
+    --nav-text-secondary: #94A3B8;
+    --nav-border: #2D5A47;
+}
+
+[data-theme='dark'] {
+    --bg-primary: #0B0D14;
+    --bg-secondary: #141826;
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --accent-primary: #6366F1;
+    --accent-primary-dark: #141826;
+    --highlight: rgba(99, 102, 241, 0.2);
+    --hover: #334155;
+    --border: #1E293B;
+    --page-header-bg: #0B0D14;
+    --page-header-text: #F1F5F9;
+    --shadow: rgba(0, 0, 0, 0.2);
+
+    /* Sidebar Colors for Dark Mode */
+    --nav-bg: #141826;
+    --nav-text: #F1F5F9;
+    --nav-text-secondary: #94A3B8;
+    --nav-border: #1E293B;
+}
+
 /* Navbar.module.css */
 
 /* General Container */
@@ -8,6 +50,7 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
     position: relative;
+    background-color: var(--bg-primary);
 }
 
 /* ===================== */
@@ -18,17 +61,18 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 2px 0 8px var(--shadow);
     z-index: 10;
     padding: 1.5rem 0 0 0;
-    transition: background-color 0.3s ease, border-right-color 0.3s ease;
+    background-color: var(--nav-bg);
+    border-right: 1px solid var(--nav-border);
     max-width: 16vw;
 }
 
 .navHeader {
     padding: 0 1.5rem 1.5rem;
     margin-bottom: 1.5rem;
-    transition: border-bottom-color 0.3s ease;
+    border-bottom: 1px solid var(--border);
 }
 
 .navHeader h1 {
@@ -36,12 +80,13 @@
     font-weight: 600;
     margin: 0;
     letter-spacing: 0.01vw;
-    transition: color 0.3s ease;
+    color: var(--nav-text);
 }
 
 .navItems {
     padding: 0 1vw;
     flex-grow: 1;
+    overflow-y: auto;
 }
 
 .navItem {
@@ -50,84 +95,95 @@
     padding: .7vw 1vw;
     text-decoration: none;
     border-radius: .5vw;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    margin-bottom: 1vw;
+    margin-bottom: 0.5vw;
     cursor: pointer;
+    color: var(--nav-text-secondary);
+    background-color: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.navItem:hover {
+    background-color: var(--hover);
+    color: var(--nav-text);
 }
 
 .navItemActive {
-    /* Active state colors are handled inline */
+    background-color: var(--highlight) !important;
+    color: var(--nav-text) !important;
     font-weight: 600;
-    position: relative;
 }
 
 /* ===================== */
 /* Dropdown Specific Styles */
 /* ===================== */
-.dropdownContainer {
-    margin-bottom: 1vw; /* Match navItem margin */
+.navDropdownContainer {
+    margin-bottom: 0.5vw;
 }
 
-.dropdownToggle {
-    /* Inherit general navItem styles where applicable */
-    font-size: 1.2vw;
-    font-weight: 500;
-    padding: .7vw 1vw;
-    border-radius: .5vw;
-    transition: background-color 0.2s ease, color 0.2s ease;
+.navDropdownToggle {
+    justify-content: space-between;
+}
+
+.navDropdownToggle.dropdownActive {
+    color: var(--nav-text);
+}
+
+.chevronIcon {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    cursor: pointer;
-    background: none; /* Ensure no default button background */
-    border: none; /* Ensure no default button border */
-    text-align: left;
 }
 
-.dropdownToggle .chevronIcon {
-    transition: transform 0.2s ease-in-out;
-    display: flex; /* Helps alignment */
-    align-items: center;
-}
-
-.dropdownToggle[aria-expanded="true"] .chevronIcon {
+.chevronIcon.rotate {
     transform: rotate(180deg);
 }
 
-.dropdownMenu {
-    background-color: transparent !important; /* User request: transparent background */
-    border-radius: 0.5rem;
-    margin-top: 0; /* Start closed */
+.navDropdownMenu {
+    background-color: transparent;
     overflow: hidden;
-    transition: max-height 0.3s ease-out, opacity 0.2s ease-out, margin-top 0.3s ease-out;
     max-height: 0;
     opacity: 0;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
-.dropdownMenu.open {
-    max-height: 500px; /* Allow space for items */
+.navDropdownMenu.menuOpen {
+    max-height: 500px;
     opacity: 1;
-    margin-top: 0.3rem; /* Add small space between toggle and items */
+    margin-top: 0.2rem;
+    margin-bottom: 0.5rem;
 }
 
 .navSubItem {
     font-size: 1.1vw; 
     font-weight: 500;
-    padding: 0.6rem 1rem 0.6rem 1.8rem; 
+    padding: 0.6vw 1.5vw; 
     text-decoration: none;
-    border-radius: .4rem;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    border-radius: .4vw;
+    transition: all 0.2s ease;
     display: block;
     cursor: pointer;
-    margin: 0 0 1vw 1.5vw;
+    margin: 0 0 0.2vw 1.5vw;
+    color: var(--nav-text-secondary);
+    border-left: 3px solid transparent;
 }
 
-.navSubItem.navItemActive {
-    /* Active state colors/bg handled inline via JS */
+.navSubItem:hover {
+    background-color: var(--hover);
+    color: var(--nav-text);
+}
+
+.navSubItemActive {
+    background-color: var(--highlight) !important;
+    color: var(--nav-text) !important;
     font-weight: 600;
+    border-left: 3px solid var(--nav-text) !important;
 }
 
 /* ===================== */
@@ -136,11 +192,11 @@
 .navFooter {
     margin-top: auto;
     display: flex;
-    justify-content: center; /* Center the buttons */
+    justify-content: center;
     align-items: center;
-    gap: 2vw; /* Add space between buttons */
-    padding: 1vw; /* Added padding */
-    transition: border-top-color 0.3s ease;
+    gap: 1.5vw;
+    padding: 1.5vw;
+    border-top: 1px solid var(--border);
 }
 
 .iconButton {
@@ -149,18 +205,21 @@
     background: none;
     border: none;
     cursor: pointer;
-    transition: opacity 0.2s ease;
-    padding: 0.5rem;
+    transition: all 0.2s ease;
+    padding: 0.5vw;
     border-radius: 50%;
+    color: var(--nav-text-secondary);
 }
 
 .iconButton:hover {
-    opacity: 0.8;
+    background-color: var(--hover);
+    color: var(--nav-text);
+    transform: translateY(-2px);
 }
 
 .iconButton svg {
-    width: 1.5vw; /* Adjusted size */
-    height: 1.5vw; /* Adjusted size */
+    width: 1.5vw;
+    height: 1.5vw;
     display: block;
 }
 
@@ -183,16 +242,16 @@
     position: fixed;
     width: 100%;
     z-index: 100;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px var(--shadow);
     height: 60px;
-    transition: background-color 0.3s ease;
+    background-color: var(--accent-primary-dark);
 }
 
 .mobileHeader h1 {
     font-size: 1.2rem;
     font-weight: 700;
     letter-spacing: 0.5px;
-    transition: color 0.3s ease;
+    color: var(--page-header-text);
 }
 
 .hamburger {
@@ -202,16 +261,10 @@
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 4px;
-    transition: background-color 0.2s ease;
-    display: flex; /* Ensure SVG is centered */
+    display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.hamburger svg {
-    width: 1.8rem;
-    height: 1.8rem;
-    display: block;
+    color: var(--page-header-text);
 }
 
 .mobileNav {
@@ -221,9 +274,10 @@
     width: 280px;
     height: 100%;
     z-index: 101;
-    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     padding-top: 1.5rem;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 4px 0 15px var(--shadow);
+    background-color: var(--nav-bg);
 }
 
 .mobileNavHeader {
@@ -231,15 +285,15 @@
     flex-direction: row;
     justify-content: space-between;
     margin-bottom: 1.5rem;
-    padding: 0rem 1.5rem 1rem 1.5rem; /* Adjusted padding */
+    padding: 0rem 1.5rem 1rem 1.5rem;
     align-items: center;
-    transition: border-bottom-color 0.3s ease;
+    border-bottom: 1px solid var(--nav-border);
 }
 
 .mobileNavHeader h1 {
     font-size: 1.5rem;
     text-align: left;
-    transition: color 0.3s ease;
+    color: var(--nav-text);
 }
 
 .mobileNav.open {

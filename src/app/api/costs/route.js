@@ -1,10 +1,13 @@
 // app/api/admin/costs/route.js
 import { NextResponse } from 'next/server';
 import pool from '../db';
+import { checkAuth } from '../apiUtils';
 
 // GET Mumbai costs
-export async function GET() {
+export async function GET(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
     const [results] = await pool.query(`
       SELECT 
         id,
@@ -35,6 +38,13 @@ export async function GET() {
 // UPDATE Mumbai costs
 export async function PUT(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    if (authCheck.type !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
+    }
+
     const { id, mumbai_cost, out_of_mumbai_cost } = await request.json();
     
     if (!id || mumbai_cost === undefined || out_of_mumbai_cost === undefined) {

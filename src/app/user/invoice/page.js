@@ -139,10 +139,18 @@ export default function InvoicePage() {
             const storedUserData = JSON.parse(localStorage.getItem('userData'));
             if (storedUserData) setUserData(storedUserData);
         } catch (e) { console.error("Could not parse user data", e); }
+    }, []);
 
+    useEffect(() => {
         const fetchReceipts = async () => {
             try {
-                const response = await fetch('/api/receipts');
+                if (!userData?.name) return;
+
+                const response = await fetch('/api/receipts', {
+                    headers: {
+                        'Authorization': `user ${userData.name}`
+                    }
+                });
                 if (!response.ok) throw new Error('Failed to fetch receipts');
                 const data = await response.json();
                 setReceipts(data);
@@ -152,12 +160,13 @@ export default function InvoicePage() {
                 setTimeout(() => setLoading(false), 500);
             }
         };
-        fetchReceipts();
-    }, []);
 
-    const userReceipts = userData
-        ? receipts.filter(receipt => receipt.user_name === userData.name)
-        : [];
+        if (userData?.name) {
+            fetchReceipts();
+        }
+    }, [userData?.name]);
+
+    const userReceipts = receipts; // API now filters by user_name
 
     const handleViewClick = (receipt) => {
         setViewingReceipt(receipt);

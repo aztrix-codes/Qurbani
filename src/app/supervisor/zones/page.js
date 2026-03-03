@@ -56,9 +56,9 @@ export default function ZonesPage() {
     fetchZones();
   }, []);
 
-  const fetchZones = async () => {
+  const fetchZones = async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const response = await axios.get('/api/zones', authHeaders);
       // Map the API data to match our frontend structure
       const mappedZones = response.data.map(zone => ({
@@ -76,15 +76,17 @@ export default function ZonesPage() {
       console.error('Error fetching zones:', error);
       setErrorMessage('Failed to fetch zones');
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   };
 
-  const filteredZones = zones.filter(zone =>
-    zone.zone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    zone.nigra.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    zone.mobile.includes(searchTerm)
-  );
+  const filteredZones = React.useMemo(() => {
+    return zones.filter(zone =>
+      zone.zone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      zone.nigra.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      zone.mobile.includes(searchTerm)
+    );
+  }, [zones, searchTerm]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -164,18 +166,22 @@ export default function ZonesPage() {
       const zone = zones.find(z => z.id === id);
       const newStatus = zone.published ? 0 : 1;
       
+      // Optimistic update
+      setZones(prev => prev.map(z => 
+        z.id === id ? { ...z, published: newStatus === 1 } : z
+      ));
+
       await axios.put('/api/zones', {
         id: id,
         publish: newStatus
       }, authHeaders);
       
-      // Update local state to reflect the change
-      setZones(zones.map(zone =>
-        zone.id === id ? { ...zone, published: newStatus === 1 } : zone
-      ));
+      // Silent refresh
+      fetchZones(false);
       setErrorMessage('');
     } catch (error) {
       console.error('Error updating status:', error);
+      fetchZones(false);
       setErrorMessage('Failed to update status');
     }
   };
@@ -186,8 +192,8 @@ export default function ZonesPage() {
     setErrorMessage('');
   };
 
-  // Apply theme-specific styles (using activeTheme from context)
-  const themeStyles = {
+  // Apply theme-specific styles (using activeTheme from context) - Memoized
+  const themeStyles = React.useMemo(() => ({
     zonePage: {
       backgroundColor: activeTheme.bgPrimary,
       color: activeTheme.textPrimary
@@ -312,7 +318,7 @@ export default function ZonesPage() {
     themeToggleHover: {
       backgroundColor: activeTheme.hover
     }
-  };
+  }), [activeTheme, currentTheme]);
 
   if (!isMounted) {
     return null; // Prevent rendering until theme is determined

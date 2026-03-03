@@ -14,19 +14,16 @@ const CustomerManagement = ({ region = 1 }) => {
   const [loading, setLoading] = useState(true);
   const [exportLoading, setExportLoading] = useState(false);
 
-  // Fetch customer data
+  // Fetch customer data (Optimized with region and status filter)
   const fetchCustomerData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/customers');
-      
-      // Filter for customers with status false/0 and matching region
-      const filteredData = response.data.filter(customer => 
-        (customer.status === false || customer.status === 0) && 
-        customer.region === parseInt(region)
-      );
-      
-      setCustomerData(filteredData);
+      const response = await axios.get(`/api/customers?region=${region}&status=false`, {
+        headers: {
+          'Authorization': 'admin'
+        }
+      });
+      setCustomerData(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching customer data:', error);
@@ -38,7 +35,7 @@ const CustomerManagement = ({ region = 1 }) => {
     fetchCustomerData();
   }, [region]);
 
-  // Export to Excel and update statuses
+  // Export to Excel and update statuses (Optimized with Bulk API)
   const exportToExcel = async () => {
     if (customerData.length === 0) {
       alert('No data to export');
@@ -52,7 +49,6 @@ const CustomerManagement = ({ region = 1 }) => {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Customers');
       
-      // Define columns
       worksheet.columns = [
         { header: 'Receipt', key: 'receipt', width: 10 },
         { header: 'Name', key: 'name', width: 20 },
@@ -63,7 +59,6 @@ const CustomerManagement = ({ region = 1 }) => {
         { header: 'Amount Paid', key: 'amount_paid', width: 15 },
       ];
       
-      // Add rows from filtered data
       customerData.forEach(customer => {
         worksheet.addRow({
           receipt: customer.receipt,
@@ -76,10 +71,7 @@ const CustomerManagement = ({ region = 1 }) => {
         });
       });
       
-      // Generate Excel file
       const buffer = await workbook.xlsx.writeBuffer();
-      
-      // Create download link
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -90,18 +82,15 @@ const CustomerManagement = ({ region = 1 }) => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      // Update statuses to true for all filtered customers
-      const updatePromises = customerData.map(customer =>
-        axios.put('/api/customers', {
-          id: customer.id,
-          status: true,
-        })
-      );
+      // Update statuses to true for all filtered customers (BULK UPDATE)
+      const customerIds = customerData.map(c => c.id);
+      await axios.patch('/api/customers', {
+        ids: customerIds,
+        status: true
+      }, {
+        headers: { Authorization: 'admin' }
+      });
       
-      // Wait for all updates to complete
-      await Promise.all(updatePromises);
-      
-      // Refresh data to reflect status changes
       await fetchCustomerData();
       
       setExportLoading(false);
@@ -113,31 +102,50 @@ const CustomerManagement = ({ region = 1 }) => {
     }
   };
 
-  const filteredData = customerData.filter(item =>
-    Object.values(item).some(val =>
-      val && String(val).toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  // Memoize filtered data to prevent unnecessary re-calc
+  const filteredData = React.useMemo(() => {
+    const searchStr = searchTerm.toLowerCase();
+    return customerData.filter(item =>
+      Object.values(item).some(val =>
+        val && String(val).toLowerCase().includes(searchStr)
+      )
+    );
+  }, [customerData, searchTerm]);
+
+  // Memoize theme styles
+  const themeStyles = React.useMemo(() => ({
+    container: { backgroundColor: activeTheme.bgPrimary },
+    card: {
+      backgroundColor: activeTheme.bgSecondary,
+      border: `1px solid ${activeTheme.border}`,
+    },
+    header: {
+      backgroundColor: activeTheme.pageHeaderBG,
+      color: activeTheme.pageHeaderText,
+    },
+    tableHeader: {
+      backgroundColor: activeTheme.bgSecondary,
+      borderBottom: `1px solid ${activeTheme.border}`,
+    },
+    tableLabel: { color: activeTheme.textSecondary || '#6b7280' },
+    dataRowBorder: { borderBottom: `1px solid ${activeTheme.border}20` },
+    textPrimary: { color: activeTheme.textPrimary },
+    accentPrimary: { color: activeTheme.accentPrimary }
+  }), [activeTheme]);
 
   return (
     <div 
-      className="customerManagementContainer"
-      style={{ backgroundColor: activeTheme.bgPrimary }}
+      className="customerManagementContainer" 
+      style={themeStyles.container}
     >
       <div 
-        className="customerManagementCard"
-        style={{
-          backgroundColor: activeTheme.bgSecondary,
-          border: `1px solid ${activeTheme.border}`,
-        }}
+        className="customerManagementCard" 
+        style={themeStyles.card}
       >
         {/* Header Section */}
         <div 
-          className="customerManagementHeader"
-          style={{
-            backgroundColor: activeTheme.pageHeaderBG,
-            color: activeTheme.pageHeaderText,
-          }}
+          className="customerManagementHeader" 
+          style={themeStyles.header}
         >
           <div className="headerContent">
             <div className="headerTitle">

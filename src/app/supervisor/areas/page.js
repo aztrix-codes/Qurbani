@@ -61,9 +61,9 @@ export default function AreasPage() {
     fetchZones();
   }, []);
 
-  const fetchAreas = async () => {
+  const fetchAreas = async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const response = await axios.get('/api/areas', authHeaders);
       // Map the API data to match our frontend structure
       const mappedAreas = response.data.map(area => ({
@@ -83,7 +83,7 @@ export default function AreasPage() {
       console.error('Error fetching areas:', error);
       setErrorMessage('Failed to fetch areas');
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   };
 
@@ -103,12 +103,14 @@ export default function AreasPage() {
     }
   };
 
-  const filteredAreas = areas.filter(area =>
-    area.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    area.incharge.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    area.zone_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    area.phone.includes(searchTerm)
-  );
+  const filteredAreas = React.useMemo(() => {
+    return areas.filter(area =>
+      area.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      area.incharge.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      area.zone_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      area.phone.includes(searchTerm)
+    );
+  }, [areas, searchTerm]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -213,18 +215,22 @@ export default function AreasPage() {
       const area = areas.find(a => a.id === id);
       const newStatus = area.publish ? 0 : 1;
       
+      // Optimistic update
+      setAreas(prev => prev.map(area =>
+        area.id === id ? { ...area, publish: newStatus === 1 } : area
+      ));
+
       await axios.put('/api/areas', {
         id: id,
         publish: newStatus
       }, authHeaders);
       
-      // Update local state to reflect the change
-      setAreas(areas.map(area =>
-        area.id === id ? { ...area, publish: newStatus === 1 } : area
-      ));
+      // Silent refresh
+      fetchAreas(false);
       setErrorMessage('');
     } catch (error) {
       console.error('Error updating status:', error);
+      fetchAreas(false);
       setErrorMessage('Failed to update status');
     }
   };
@@ -244,8 +250,8 @@ export default function AreasPage() {
     setErrorMessage('');
   };
 
-  // Theme-specific styles using activeTheme from context
-  const themeStyles = {
+  // Theme-specific styles using activeTheme from context - Memoized
+  const themeStyles = React.useMemo(() => ({
     areaPage: {
       backgroundColor: activeTheme.bgPrimary,
       color: activeTheme.textPrimary
@@ -379,7 +385,7 @@ export default function AreasPage() {
     themeToggleHover: {
       backgroundColor: activeTheme.hover
     }
-  };
+  }), [activeTheme, isLight]);
 
   // Prevent rendering until theme context is mounted
   if (!isMounted) {

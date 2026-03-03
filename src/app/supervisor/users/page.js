@@ -90,9 +90,9 @@ export default function UsersPage() {
   }, [isModalOpen, currentEditId]);
 
   // Fetch all users
-  const fetchUsers = async () => {
+  const fetchUsers = async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const response = await axios.get(API_USERS_LIST, authHeaders);
       const mappedUsers = response.data.map(user => ({
         id: user.id,
@@ -116,7 +116,7 @@ export default function UsersPage() {
       console.error('Error fetching users:', error);
       setErrorMessage('Failed to fetch users list');
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   };
 
@@ -164,14 +164,16 @@ export default function UsersPage() {
     }
   };
 
-  // Filter users
-  const filteredUsers = users.filter(user =>
-    (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (user.phone || '').includes(searchTerm) ||
-    (user.area_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (user.zone_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  );
+  // Filter users - Memoized
+  const filteredUsers = React.useMemo(() => {
+    return users.filter(user =>
+      (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (user.phone || '').includes(searchTerm) ||
+      (user.area_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (user.zone_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
+  }, [users, searchTerm]);
 
   // Form input handlers
   const handleInputChange = (e) => {
@@ -354,27 +356,36 @@ export default function UsersPage() {
   };
 
   // Toggle Publish Status
+  // Toggle Publish Status
   const togglePublishedStatus = async (id) => {
     try {
       const user = users.find(u => u.id === id);
       if (!user) return;
-      const newStatus = user.publish ? 0 : 1;
       
+      const newStatus = !user.publish;
+      
+      // Optimistic Update
+      setUsers(prev => prev.map(u => 
+        u.id === id ? { ...u, publish: newStatus } : u
+      ));
+
       // Use PUT on the dynamic route for partial update
       await axios.put(`${API_USER_DYNAMIC}/${id}`, {
-        // id: id, // ID is in URL
-        publish: newStatus
+        publish: newStatus ? 1 : 0
       }, authHeaders);
       
-      await fetchUsers(); 
+      // Silent refresh in background to ensure sync
+      fetchUsers(false);
       setErrorMessage('');
     } catch (error) {
       console.error('Error updating status:', error);
-       if (error.response) {
-          setErrorMessage(`Failed to update status: ${error.response.data.error || error.message}`);
-        } else {
-          setErrorMessage('Failed to update status.');
-        }
+      // Rollback on error
+      fetchUsers(false);
+      if (error.response) {
+        setErrorMessage(`Failed to update status: ${error.response.data.error || error.message}`);
+      } else {
+        setErrorMessage('Failed to update status.');
+      }
     }
   };
 
@@ -405,8 +416,8 @@ export default function UsersPage() {
     }
   };
 
-  // Theme styles (reduced for brevity - assume they exist as before)
-  const themeStyles = {
+  // Theme styles - Memoized
+  const themeStyles = React.useMemo(() => ({
      userPage: { backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary },
      pageHeader: { color: activeTheme.textPrimary },
      addButton: { backgroundColor: activeTheme.accentPrimary, color: 'white' },
@@ -473,7 +484,7 @@ export default function UsersPage() {
         color: activeTheme.textSecondary,
         fontStyle: 'italic'
      }
-  };
+  }), [activeTheme, isLight]);
 
   if (isLoading) {
     return (
@@ -566,13 +577,12 @@ export default function UsersPage() {
                 <div className='table-cell'>{user.rate_r2}</div>
                 <div className='table-cell'>
                   <div style={themeStyles.toggleSwitchContainer}>
-                    <label 
-                      style={{ ...themeStyles.toggleSwitch, ...(user.publish ? themeStyles.toggleSwitchInputCheckedContainer : {}) }}
+                    <div 
+                      style={{ ...themeStyles.toggleSwitch, ...(user.publish ? themeStyles.toggleSwitchInputCheckedContainer : {}), cursor: 'pointer' }}
                       onClick={(e) => { e.stopPropagation(); togglePublishedStatus(user.id); }}
                     >
-                      <input type="checkbox" checked={user.publish} readOnly style={themeStyles.toggleSwitchInput} />
                       <span style={{ ...themeStyles.toggleSwitchSlider, ...(user.publish ? themeStyles.toggleSwitchInputCheckedSlider : {}) }}></span>
-                    </label>
+                    </div>
                   </div>
                 </div>
                 <div className='table-cell'>
@@ -699,13 +709,12 @@ export default function UsersPage() {
 
               <div style={{...themeStyles.modalField, gridColumn: '1 / -1', flexDirection: 'row', alignItems: 'center', gap: '10px'}}>
                 <label htmlFor="publish" style={{...themeStyles.modalLabel, marginBottom: 0}}>Published:</label>
-                 <label 
-                    style={{ ...themeStyles.toggleSwitch, ...(formData.publish === 1 ? themeStyles.toggleSwitchInputCheckedContainer : {}) }}
+                 <div 
+                    style={{ ...themeStyles.toggleSwitch, ...(formData.publish === 1 ? themeStyles.toggleSwitchInputCheckedContainer : {}), cursor: 'pointer' }}
                     onClick={togglePublished}
                     >
-                    <input type="checkbox" id="publish" checked={formData.publish === 1} readOnly style={themeStyles.toggleSwitchInput} />
                     <span style={{ ...themeStyles.toggleSwitchSlider, ...(formData.publish === 1 ? themeStyles.toggleSwitchInputCheckedSlider : {}) }}></span>
-                </label>
+                </div>
               </div>
 
               {/* Modal Actions */}

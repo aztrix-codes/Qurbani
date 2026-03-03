@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import pool from '../db';
+import { checkAuth } from '../apiUtils';
 
 export async function GET(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
     const [results] = await pool.query(`
       SELECT lock_status FROM admin WHERE id = 1
     `);
@@ -23,6 +27,13 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   try {
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    if (authCheck.type !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { lock_status } = body;
 

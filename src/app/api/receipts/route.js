@@ -1,25 +1,27 @@
-// app/api/receipts/route.js
 import { NextResponse } from 'next/server';
 import pool from '../db';
+import { checkAuth, checkLockStatus } from '../apiUtils';
 
-// Helper for auth check
-function checkAuth(authHeader) {
-  if (!authHeader) return { error: 'Authorization header missing', status: 401 };
-  
-  const [authType] = authHeader.split(' ');
-  if (!['admin', 'supervisor'].includes(authType.toLowerCase())) {
-    return { error: 'Unauthorized access', status: 403 };
-  }
-  return { authorized: true };
-}
-
-// Public GET endpoint
+// GET receipts
 export async function GET(request) {
   try {
-    const [receipts] = await pool.query(`
-      SELECT * FROM receipts
-      ORDER BY created_at DESC
-    `);
+    const authCheck = checkAuth(request.headers.get('authorization'));
+    if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
+
+    let query = 'SELECT * FROM receipts';
+    const params = [];
+
+    if (authCheck.type === 'user') {
+      if (!authCheck.name) {
+        return NextResponse.json({ error: 'User name required in Authorization header' }, { status: 400 });
+      }
+      query += ' WHERE user_name = ?';
+      params.push(authCheck.name);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [receipts] = await pool.query(query, params);
     return NextResponse.json(receipts);
 
   } catch (error) {
@@ -38,6 +40,10 @@ export async function POST(request) {
     const authCheck = checkAuth(request.headers.get('authorization'));
     if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
 
+    // Check lock status
+    const lockCheck = await checkLockStatus();
+    if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
+
     const receiptData = await request.json();
     
     // Validate required fields
@@ -53,6 +59,11 @@ export async function POST(request) {
         { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       );
+    }
+
+    // Security: Users can only submit for themselves
+    if (authCheck.type === 'user' && receiptData.user_name !== authCheck.name) {
+      return NextResponse.json({ error: 'Cannot submit receipts for another user' }, { status: 403 });
     }
 
     // Insert new receipt
