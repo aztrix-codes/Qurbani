@@ -286,15 +286,57 @@
 .formSection h3 {
   font-size: 1.2vw;
   font-weight: bold;
-  margin-bottom: 1.5vw;
-  margin-top: 0;
+  margin: 0;
 }
 
-.formGrid {
+.receiptFormHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5vw;
+}
+
+.receiptEntryLayout {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15vw, 1fr));
-  gap: 1.5vw;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: 1.5rem;
+  align-items: start;
   margin-bottom: 2vw;
+}
+
+.receiptFieldsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fieldSectionCard {
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.fieldSectionHeader {
+  margin-bottom: 1rem;
+}
+
+.fieldSectionHeader h4 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.fieldSectionHeader p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.summaryGrid,
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
 }
 
 .formGroup {
@@ -320,18 +362,60 @@
 }
 
 .imageUploadSection {
-  margin-bottom: 2vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  width: 100%;
+}
+
+.imagePreviewPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(100%, 28rem);
+  align-items: stretch;
 }
 
 .imagePreview {
   width: 100%;
-  height: 20vw;
+  aspect-ratio: 1 / 1.2;
   border-radius: 0.6vw;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1vw;
   overflow: hidden;
+}
+
+.webcamPreviewShell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.webcamPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.webcamStatus {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  max-width: calc(100% - 2rem);
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.88);
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.webcamStatusError {
+  background: rgba(255, 244, 244, 0.94);
 }
 
 .previewImage {
@@ -352,29 +436,33 @@
 }
 
 .imageActions {
-  display: flex;
-  gap: 1.5vw;
-  justify-content: center;
-  margin-top: 1vw;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+  margin-top: 0.25rem;
 }
 
 .button {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5vw;
-  padding: 0.5vw 1.2vw;
+  padding: 0.65rem 0.85rem;
   border-radius: 0.4vw;
-  font-size: 0.875vw;
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
+  text-align: center;
+  line-height: 1.25;
 }
 
 .formActions {
   margin-top: 2vw;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .submitButton {
@@ -486,6 +574,37 @@
     font-size: 0.8rem;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .receiptFormHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .receiptFormHeader .submitButton {
+    width: 100%;
+  }
+
+  .receiptEntryLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryGrid,
+  .actionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .imagePreview {
+    width: 100%;
+  }
+
+  .imageActions {
+    width: 100%;
+  }
+
+  .button {
+    font-size: 0.9rem;
+    padding: 0.75rem 0.85rem;
   }
 
   .tableRow {

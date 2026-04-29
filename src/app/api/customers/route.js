@@ -175,7 +175,7 @@ export async function PUT(request) {
   }
 }
 
-// BULK UPDATE or SINGLE UPDATE payment status
+// BULK UPDATE customer fields
 export async function PATCH(request) {
   try {
     const authCheck = checkAuth(request.headers.get('authorization'));
@@ -184,30 +184,37 @@ export async function PATCH(request) {
     const lockCheck = await checkLockStatus();
     if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
 
-    const { ids, payment_status, status } = await request.json();
+    const { ids, payment_status, status, amount_paid } = await request.json();
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'Array of customer IDs required' }, { status: 400 });
     }
 
-    let fieldToUpdate = '';
-    let valueToSet = null;
+    const updateFields = {};
 
     if (payment_status !== undefined) {
-      fieldToUpdate = 'payment_status';
-      valueToSet = payment_status ? 1 : 0;
-    } else if (status !== undefined) {
-      fieldToUpdate = 'status';
-      valueToSet = status ? 1 : 0;
+      updateFields.payment_status = payment_status ? 1 : 0;
     }
 
-    if (!fieldToUpdate) {
+    if (status !== undefined) {
+      updateFields.status = status ? 1 : 0;
+    }
+
+    if (amount_paid !== undefined) {
+      const parsedAmount = Number.parseFloat(amount_paid);
+      if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+        return NextResponse.json({ error: 'amount_paid must be a non-negative number' }, { status: 400 });
+      }
+      updateFields.amount_paid = parsedAmount;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
       return NextResponse.json({ error: 'No field to update provided' }, { status: 400 });
     }
 
     const [result] = await pool.query(
-      `UPDATE customers SET ${fieldToUpdate} = ? WHERE id IN (?)`,
-      [valueToSet, ids]
+      `UPDATE customers SET ? WHERE id IN (?)`,
+      [updateFields, ids]
     );
 
     return NextResponse.json({ 

@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Webcam from 'react-webcam';
 import { Search, FileText, Eye, Camera, Upload } from 'lucide-react';
 import { useTheme } from '../../themeContext';
@@ -19,7 +18,6 @@ const formatCurrency = (amount) => {
 
 const ReceiptScreen = ({ region = 1 }) => {
   const { activeTheme } = useTheme();
-  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [areasList, setAreasList] = useState([]);
   const [users, setUsers] = useState([]);
@@ -27,7 +25,6 @@ const ReceiptScreen = ({ region = 1 }) => {
   const [receipts, setReceipts] = useState([]);
   const [showEyeModal, setShowEyeModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [selectedRowId, setSelectedRowId] = useState(null);
   const [selectedRowData, setSelectedRowData] = useState(null);
   const [userViewDetail, setUserViewDetail] = useState(null);
   const [amountPerShare, setAmountPerShare] = useState(0);
@@ -37,10 +34,46 @@ const ReceiptScreen = ({ region = 1 }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [formErrors, setFormErrors] = useState({});
   const [webcamEnabled, setWebcamEnabled] = useState(false);
+  const [webcamReady, setWebcamReady] = useState(false);
+  const [webcamLoading, setWebcamLoading] = useState(false);
+  const [webcamError, setWebcamError] = useState('');
+  const [webcamReloadKey, setWebcamReloadKey] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [pendingShares, setPendingShares] = useState(0); // Add this line
   const fileInputRef = useRef(null);
   const webcamRef = useRef(null);
+  const webcamVideoConstraints = React.useMemo(
+    () => ({
+      width: { ideal: 720 },
+      height: { ideal: 960 },
+      aspectRatio: 3 / 4,
+      facingMode: { ideal: 'environment' },
+    }),
+    []
+  );
+
+  const resetWebcamState = useCallback(() => {
+    setWebcamEnabled(false);
+    setWebcamReady(false);
+    setWebcamLoading(false);
+    setWebcamError('');
+  }, []);
+
+  const startWebcam = useCallback(() => {
+    setSelectedImage(null);
+    setWebcamError('');
+    setWebcamReady(false);
+    setWebcamLoading(true);
+    setWebcamEnabled(true);
+    setWebcamReloadKey((current) => current + 1);
+  }, []);
+
+  const reloadWebcam = useCallback(() => {
+    setWebcamError('');
+    setWebcamReady(false);
+    setWebcamLoading(true);
+    setWebcamReloadKey((current) => current + 1);
+  }, []);
 
 
   // Fetch areas
@@ -99,80 +132,10 @@ const ReceiptScreen = ({ region = 1 }) => {
     }
   }, []);
 
-  // Upload image to imgbb
-  const uploadToImgbb = async (imageData) => {
-    try {
-      setUploadingImage(true);
-      
-      // Convert base64 image to blob
-      const base64Data = imageData.split(',')[1];
-      
-      // --- API Endpoints ---
-      const API_RECEIPTS = '/api/receipts';
-      const API_CUSTOMERS = '/api/customers';
-      const IMGBB_API_KEY = '5d7b25beb20889d2109afe5aa0e19b31';
-      const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
-      // ---------------------
-      // Create form data for imgbb API
-      const formData = new FormData();
-      formData.append('image', base64Data);
-      formData.append('key', IMGBB_API_KEY); // Replace with your imgbb API key
-      
-      // Upload to imgbb
-      const response = await fetch(IMGBB_UPLOAD_URL, {
-        method: 'POST',
-        body: formData
-      });
-      
-      const data = await response.json();
-      
-      if (data && data.data && data.data.url) {
-        setUploadingImage(false);
-        return data.data.url;
-      } else {
-        throw new Error('Failed to get image URL from imgbb');
-      }
-    } catch (error) {
-      console.error('Error uploading image to imgbb:', error);
-      setUploadingImage(false);
-      throw error;
-    }
-  };
-
-  // Update payment status (Optimized with Bulk API)
-  const updatePaymentStatus = async (customerIds) => {
-    try {
-      const response = await fetch('/api/customers', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'admin',
-        },
-        body: JSON.stringify({
-          ids: customerIds,
-          payment_status: true,
-        }),
-      });
-      
-      if (!response.ok) throw new Error('Bulk update failed');
-      
-      await fetchCustomerData();
-      return true;
-    } catch (error) {
-      console.error('Error updating payment status:', error);
-      return false;
-    }
-  };
-
   // Create receipt
   const createReceipt = async (receiptData) => {
     try {
-      // Upload image first if it's a base64 string
-      if (receiptData.img && receiptData.img.startsWith('data:image')) {
-        const imageUrl = await uploadToImgbb(receiptData.img);
-        receiptData.img = imageUrl;
-      }
-      
+      setUploadingImage(true);
       const response = await fetch('/api/receipts', {
         method: 'POST',
         headers: {
@@ -181,12 +144,20 @@ const ReceiptScreen = ({ region = 1 }) => {
         },
         body: JSON.stringify(receiptData),
       });
-      if (!response.ok) throw new Error('Failed to create receipt');
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to create receipt');
+      }
+
       await fetchReceipts();
-      return await response.json();
+      await fetchCustomerData();
+      return data;
     } catch (error) {
       console.error('Error creating receipt:', error);
       throw error;
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -205,8 +176,8 @@ const ReceiptScreen = ({ region = 1 }) => {
 
   // Set amount per share
   useEffect(() => {
-    if (userViewDetail && userViewDetail.rate_r1) {
-      setAmountPerShare(Math.ceil(parseFloat(userViewDetail.rate_r1)));
+    if (userViewDetail?.rate_r1 !== undefined && userViewDetail?.rate_r1 !== null) {
+      setAmountPerShare(Math.ceil(parseFloat(userViewDetail.rate_r1) || 0));
     }
     if (selectedRowData) {
       const totalShares = selectedRowData?.length || 0;
@@ -225,15 +196,13 @@ const ReceiptScreen = ({ region = 1 }) => {
   }, [areasList]);
 
   // Modal handlers
-  const handleEyeClick = (rowId, rowData, item) => {
-    setSelectedRowId(rowId);
+  const handleEyeClick = (rowData, item) => {
     setSelectedRowData(rowData);
     setUserViewDetail(item);
     setShowEyeModal(true);
   };
 
-  const handleReceiptClick = (rowId, rowData, item) => {
-    setSelectedRowId(rowId);
+  const handleReceiptClick = (rowData, item) => {
     setSelectedRowData(rowData);
     setUserViewDetail(item);
     setHowMuchPaying(0);
@@ -241,24 +210,22 @@ const ReceiptScreen = ({ region = 1 }) => {
     setCollectedBy('');
     setSelectedImage(null);
     setFormErrors({});
-    setWebcamEnabled(false);
+    resetWebcamState();
     setShowReceiptModal(true);
   };
 
   const closeEyeModal = () => {
     setShowEyeModal(false);
-    setSelectedRowId(null);
     setSelectedRowData(null);
     setUserViewDetail(null);
   };
 
   const closeReceiptModal = () => {
     setShowReceiptModal(false);
-    setSelectedRowId(null);
     setSelectedRowData(null);
     setUserViewDetail(null);
     setFormErrors({});
-    setWebcamEnabled(false);
+    resetWebcamState();
   };
 
   // Image handlers
@@ -268,6 +235,7 @@ const ReceiptScreen = ({ region = 1 }) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setSelectedImage(e.target.result);
+        resetWebcamState();
         setFormErrors({ ...formErrors, image: '' });
       };
       reader.readAsDataURL(file);
@@ -275,11 +243,19 @@ const ReceiptScreen = ({ region = 1 }) => {
   };
 
   const handleCapture = () => {
+    if (!webcamRef.current || !webcamReady) {
+      setWebcamError('Camera preview is not ready yet. Try reloading the camera.');
+      return;
+    }
+
     const imageSrc = webcamRef.current.getScreenshot();
     if (imageSrc) {
       setSelectedImage(imageSrc);
+      setWebcamError('');
       setFormErrors({ ...formErrors, image: '' });
-      setWebcamEnabled(false);
+      resetWebcamState();
+    } else {
+      setWebcamError('Unable to capture photo. Try reloading the camera preview.');
     }
   };
 
@@ -290,10 +266,11 @@ const ReceiptScreen = ({ region = 1 }) => {
   // Form validation
   const validateForm = () => {
     const errors = {};
-    const totalShares = selectedRowData?.length || 0;
-    const sharesPaid = selectedRowData
-      ? selectedRowData.filter((customer) => customer.payment_status).length
-      : 0;
+
+    if (!Number.isInteger(howMuchPaying) || howMuchPaying < 1) {
+      errors.howMuchPaying = 'Paying count must be at least 1';
+    }
+
     if (howMuchPaying > pendingShares) {
       errors.howMuchPaying = `Cannot exceed pending shares (${pendingShares})`;
     }
@@ -314,6 +291,23 @@ const ReceiptScreen = ({ region = 1 }) => {
     return Object.keys(errors).length === 0;
   };
 
+  const handleWebcamReady = () => {
+    setWebcamReady(true);
+    setWebcamLoading(false);
+    setWebcamError('');
+  };
+
+  const handleWebcamError = (error) => {
+    console.error('Webcam error:', error);
+    setWebcamReady(false);
+    setWebcamLoading(false);
+    setWebcamError(
+      error?.name === 'NotAllowedError'
+        ? 'Camera access was blocked. Allow permission and reload the camera.'
+        : 'Camera preview could not start. Try reloading the camera. If this device has no rear camera, the browser will fall back to the default camera.'
+    );
+  };
+
   // Form submission
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -323,8 +317,15 @@ const ReceiptScreen = ({ region = 1 }) => {
       const amount = Math.ceil(howMuchPaying * amountPerShare);
       const area = userViewDetail?.area_name;
       const zone = getZoneNameFromArea(area);
-      const currentYear = new Date().getFullYear();
-      const purpose = `Qurbani (${currentYear})`;
+      const unpaidCustomers = (selectedRowData || []).filter(
+        (customer) => !customer.payment_status
+      );
+      const customersToUpdate = unpaidCustomers.slice(0, howMuchPaying);
+      const customerIdsToUpdate = customersToUpdate.map((customer) => customer.id);
+
+      if (customerIdsToUpdate.length !== howMuchPaying) {
+        throw new Error('Selected shares are no longer available. Please try again.');
+      }
 
       const receiptData = {
         user_name: userViewDetail?.name,
@@ -334,41 +335,29 @@ const ReceiptScreen = ({ region = 1 }) => {
         rate: parseFloat(amountPerShare),
         hissa: parseInt(howMuchPaying, 10),
         total_amt: parseFloat(amount),
+        region,
         area_name: area,
         area_incharge:
           areasList.find((area) => area.name === userViewDetail?.area_name)
-            ?.area_incharge || null,
+            ?.area_incharge || '',
         zone_name: zone,
-        zone_incharge: userViewDetail?.zone_incharge || null,
+        zone_incharge: userViewDetail?.zone_incharge || '',
         phone: userViewDetail?.phone || null,
         email: userViewDetail?.email || null,
-        purpose,
+        customer_ids: customerIdsToUpdate,
       };
 
       await createReceipt(receiptData);
 
-      const unpaidCustomers = selectedRowData.filter(
-        (customer) => !customer.payment_status
-      );
-      const customersToUpdate = unpaidCustomers.slice(0, howMuchPaying);
-      const customerIdsToUpdate = customersToUpdate.map((customer) => customer.id);
-
-      if (customerIdsToUpdate.length > 0) {
-        const updated = await updatePaymentStatus(customerIdsToUpdate);
-        if (!updated) {
-          alert('Receipt created but failed to update payment status.');
-        }
-      }
-
       setHowMuchPaying(0);
       setPaidBy('');
       setCollectedBy('');
-      setSelectedImage(null);
-      setFormErrors({});
-      setWebcamEnabled(false);
-      alert(
-        `Payment of ${formatCurrency(amount)} for ${howMuchPaying} shares recorded successfully!`
-      );
+    setSelectedImage(null);
+    setFormErrors({});
+    resetWebcamState();
+    alert(
+      `Payment of ${formatCurrency(amount)} for ${howMuchPaying} shares recorded successfully!`
+    );
       closeReceiptModal();
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -621,7 +610,7 @@ const ReceiptScreen = ({ region = 1 }) => {
                     <div className="tableCell cellReceipt">
                       <button
                         onClick={() =>
-                          handleReceiptClick(group.user.id, group.customers, group.user)
+                          handleReceiptClick(group.customers, group.user)
                         }
                         className="actionButton"
                         style={{
@@ -635,7 +624,7 @@ const ReceiptScreen = ({ region = 1 }) => {
                     <div className="tableCell cellActions">
                       <button
                         onClick={() =>
-                          handleEyeClick(group.user.id, group.customers, group.user)
+                          handleEyeClick(group.customers, group.user)
                         }
                         className="actionButton"
                         style={{
@@ -901,11 +890,23 @@ const ReceiptScreen = ({ region = 1 }) => {
                 className="formSection"
                 style={{ backgroundColor: activeTheme.bgSecondary }}
               >
-                <h3 style={{ color: activeTheme.textPrimary }}>Add New Receipt</h3>
                 <form onSubmit={handleFormSubmit}>
-                  <div className="formGrid">
+                  <div className="receiptFormHeader">
+                    <h3 style={{ color: activeTheme.textPrimary }}>Add New Receipt</h3>
+                    <button
+                      type="submit"
+                      className="submitButton"
+                      style={{
+                        backgroundColor: activeTheme.accentPrimary,
+                        color: activeTheme.bgPrimary,
+                      }}
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? 'Submitting Receipt...' : 'Submit Receipt'}
+                    </button>
+                  </div>
+                  <div className="receiptEntryLayout">
                     {(() => {
-                      // Calculate all share variables
                       const totalShares = selectedRowData?.length || 0;
                       const sharesPaid = selectedRowData
                         ? selectedRowData.filter((customer) => customer.payment_status)
@@ -917,376 +918,314 @@ const ReceiptScreen = ({ region = 1 }) => {
                       const payingAmount = Math.ceil(howMuchPaying * amountPerShare);
 
                       return (
-                        <>
-                          <div className="formGroup">
-                            <label
-                              htmlFor="totalShares"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Total Shares
-                            </label>
-                            <input
-                              id="totalShares"
-                              type="text"
-                              value={totalShares}
-                              readOnly
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${activeTheme.border}`,
-                              }}
-                            />
-                          </div>
-
-                          <div className="formGroup">
-                            <label
-                              htmlFor="amountPerShare"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Amount Per Share
-                            </label>
-                            <input
-                              id="amountPerShare"
-                              type="text"
-                              value={formatCurrency(amountPerShare)}
-                              readOnly
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${activeTheme.border}`,
-                              }}
-                            />
-                          </div>
-
-                          <div className="formGroup">
-                            <label
-                              htmlFor="totalAmount"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Total Amount
-                            </label>
-                            <input
-                              id="totalAmount"
-                              type="text"
-                              value={formatCurrency(totalAmount)}
-                              readOnly
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${activeTheme.border}`,
-                              }}
-                            />
-                          </div>
-
-                          <div className="formGroup">
-                            <label
-                              htmlFor="paidShares"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Paid Shares
-                            </label>
-                            <input
-                              id="paidShares"
-                              type="text"
-                              value={sharesPaid}
-                              readOnly
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${activeTheme.border}`,
-                              }}
-                            />
-                          </div>
-
-                          <div className="formGroup">
-                            <label
-                              htmlFor="pendingShares"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Pending Shares
-                            </label>
-                            <input
-                              id="pendingShares"
-                              type="text"
-                              value={pendingShares}
-                              readOnly
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${activeTheme.border}`,
-                              }}
-                            />
-                          </div>
-
-                          <div className="formGroup">
-                            <label
-                              htmlFor="pendingAmount"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Pending Amount
-                            </label>
-                            <input
-                              id="pendingAmount"
-                              type="text"
-                              value={formatCurrency(pendingAmount)}
-                              readOnly
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${activeTheme.border}`,
-                              }}
-                            />
-                          </div>
-
-                          <div className="formGroup">
-                            <label
-                              htmlFor="howMuchPaying"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Paying Count <span style={{ color: activeTheme.error }}>*</span>
-                            </label>
-                            <input
-                              id="howMuchPaying"
-                              type="number"
-                              min="0"
-                              max={pendingShares}
-                              value={howMuchPaying}
-                              onChange={(e) => {
-                                const value = Math.min(
-                                  pendingShares,
-                                  Math.max(0, parseInt(e.target.value) || 0)
-                                );
-                                setHowMuchPaying(value);
-                                setFormErrors({ ...formErrors, howMuchPaying: null });
-                              }}
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${
-                                  formErrors.howMuchPaying
-                                    ? activeTheme.error
-                                    : activeTheme.border
-                                }`,
-                              }}
-                              disabled={pendingShares <= 0}
-                            />
-                            {formErrors.howMuchPaying && (
-                              <div
-                                className="errorMessage"
-                                style={{ color: activeTheme.error }}
-                              >
-                                {formErrors.howMuchPaying}
+                        <div className="receiptFieldsPanel">
+                          <div
+                            className="fieldSectionCard"
+                            style={{
+                              backgroundColor: `${activeTheme.bgPrimary}85`,
+                              border: `1px solid ${activeTheme.border}`,
+                            }}
+                          >
+                            <div className="fieldSectionHeader">
+                              <h4 style={{ color: activeTheme.textPrimary }}>Share Summary</h4>
+                              <p style={{ color: activeTheme.textSecondary }}>
+                                Review the overall shares and remaining amount before collecting.
+                              </p>
+                            </div>
+                            <div className="summaryGrid">
+                              <div className="formGroup">
+                                <label htmlFor="totalShares" style={{ color: activeTheme.textSecondary }}>
+                                  Total Shares
+                                </label>
+                                <input id="totalShares" type="text" value={totalShares} readOnly className="formInput" style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, border: `1px solid ${activeTheme.border}` }} />
                               </div>
-                            )}
-                          </div>
-
-                          <div className="formGroup">
-                            <label
-                              htmlFor="payingAmount"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Paying Amount
-                            </label>
-                            <input
-                              id="payingAmount"
-                              type="text"
-                              value={formatCurrency(payingAmount)}
-                              readOnly
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${activeTheme.border}`,
-                              }}
-                            />
-                          </div>
-
-                          <div className="formGroup">
-                            <label
-                              htmlFor="paidBy"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Paid By <span style={{ color: activeTheme.error }}>*</span>
-                            </label>
-                            <input
-                              id="paidBy"
-                              type="text"
-                              value={paidBy}
-                              onChange={(e) => {
-                                setPaidBy(e.target.value);
-                                setFormErrors({ ...formErrors, paidBy: null });
-                              }}
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${
-                                  formErrors.paidBy
-                                    ? activeTheme.error
-                                    : activeTheme.border
-                                }`,
-                              }}
-                            />
-                            {formErrors.paidBy && (
-                              <div
-                                className="errorMessage"
-                                style={{ color: activeTheme.error }}
-                              >
-                                {formErrors.paidBy}
+                              <div className="formGroup">
+                                <label htmlFor="amountPerShare" style={{ color: activeTheme.textSecondary }}>
+                                  Amount Per Share
+                                </label>
+                                <input id="amountPerShare" type="text" value={formatCurrency(amountPerShare)} readOnly className="formInput" style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, border: `1px solid ${activeTheme.border}` }} />
                               </div>
-                            )}
+                              <div className="formGroup">
+                                <label htmlFor="totalAmount" style={{ color: activeTheme.textSecondary }}>
+                                  Total Amount
+                                </label>
+                                <input id="totalAmount" type="text" value={formatCurrency(totalAmount)} readOnly className="formInput" style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, border: `1px solid ${activeTheme.border}` }} />
+                              </div>
+                              <div className="formGroup">
+                                <label htmlFor="paidShares" style={{ color: activeTheme.textSecondary }}>
+                                  Paid Shares
+                                </label>
+                                <input id="paidShares" type="text" value={sharesPaid} readOnly className="formInput" style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, border: `1px solid ${activeTheme.border}` }} />
+                              </div>
+                              <div className="formGroup">
+                                <label htmlFor="pendingShares" style={{ color: activeTheme.textSecondary }}>
+                                  Pending Shares
+                                </label>
+                                <input id="pendingShares" type="text" value={pendingShares} readOnly className="formInput" style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, border: `1px solid ${activeTheme.border}` }} />
+                              </div>
+                              <div className="formGroup">
+                                <label htmlFor="pendingAmount" style={{ color: activeTheme.textSecondary }}>
+                                  Pending Amount
+                                </label>
+                                <input id="pendingAmount" type="text" value={formatCurrency(pendingAmount)} readOnly className="formInput" style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, border: `1px solid ${activeTheme.border}` }} />
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="formGroup">
-                            <label
-                              htmlFor="collectedBy"
-                              style={{ color: activeTheme.textSecondary }}
-                            >
-                              Collected By <span style={{ color: activeTheme.error }}>*</span>
-                            </label>
-                            <input
-                              id="collectedBy"
-                              type="text"
-                              value={collectedBy}
-                              onChange={(e) => {
-                                setCollectedBy(e.target.value);
-                                setFormErrors({ ...formErrors, collectedBy: null });
-                              }}
-                              className="formInput"
-                              style={{
-                                backgroundColor: activeTheme.bgPrimary,
-                                color: activeTheme.textPrimary,
-                                border: `1px solid ${
-                                  formErrors.collectedBy
-                                    ? activeTheme.error
-                                    : activeTheme.border
-                                }`,
-                              }}
-                            />
-                            {formErrors.collectedBy && (
-                              <div
-                                className="errorMessage"
-                                style={{ color: activeTheme.error }}
-                              >
-                                {formErrors.collectedBy}
+                          <div
+                            className="fieldSectionCard"
+                            style={{
+                              backgroundColor: `${activeTheme.bgPrimary}85`,
+                              border: `1px solid ${activeTheme.border}`,
+                            }}
+                          >
+                            <div className="fieldSectionHeader">
+                              <h4 style={{ color: activeTheme.textPrimary }}>Collection Details</h4>
+                              <p style={{ color: activeTheme.textSecondary }}>
+                                Enter how many shares are being paid now and who handled the payment.
+                              </p>
+                            </div>
+                            <div className="actionGrid">
+                              <div className="formGroup">
+                                <label htmlFor="howMuchPaying" style={{ color: activeTheme.textSecondary }}>
+                                  Paying Count <span style={{ color: activeTheme.error }}>*</span>
+                                </label>
+                                <input
+                                  id="howMuchPaying"
+                                  type="number"
+                                  min="0"
+                                  max={pendingShares}
+                                  value={howMuchPaying}
+                                  onChange={(e) => {
+                                    const value = Math.min(
+                                      pendingShares,
+                                      Math.max(0, parseInt(e.target.value) || 0)
+                                    );
+                                    setHowMuchPaying(value);
+                                    setFormErrors({ ...formErrors, howMuchPaying: null });
+                                  }}
+                                  className="formInput"
+                                  style={{
+                                    backgroundColor: activeTheme.bgPrimary,
+                                    color: activeTheme.textPrimary,
+                                    border: `1px solid ${
+                                      formErrors.howMuchPaying
+                                        ? activeTheme.error
+                                        : activeTheme.border
+                                    }`,
+                                  }}
+                                  disabled={pendingShares <= 0}
+                                />
+                                {formErrors.howMuchPaying && (
+                                  <div className="errorMessage" style={{ color: activeTheme.error }}>
+                                    {formErrors.howMuchPaying}
+                                  </div>
+                                )}
                               </div>
-                            )}
+
+                              <div className="formGroup">
+                                <label htmlFor="payingAmount" style={{ color: activeTheme.textSecondary }}>
+                                  Paying Amount
+                                </label>
+                                <input id="payingAmount" type="text" value={formatCurrency(payingAmount)} readOnly className="formInput" style={{ backgroundColor: activeTheme.bgPrimary, color: activeTheme.textPrimary, border: `1px solid ${activeTheme.border}` }} />
+                              </div>
+
+                              <div className="formGroup">
+                                <label htmlFor="paidBy" style={{ color: activeTheme.textSecondary }}>
+                                  Paid By <span style={{ color: activeTheme.error }}>*</span>
+                                </label>
+                                <input
+                                  id="paidBy"
+                                  type="text"
+                                  value={paidBy}
+                                  onChange={(e) => {
+                                    setPaidBy(e.target.value);
+                                    setFormErrors({ ...formErrors, paidBy: null });
+                                  }}
+                                  className="formInput"
+                                  style={{
+                                    backgroundColor: activeTheme.bgPrimary,
+                                    color: activeTheme.textPrimary,
+                                    border: `1px solid ${
+                                      formErrors.paidBy ? activeTheme.error : activeTheme.border
+                                    }`,
+                                  }}
+                                />
+                                {formErrors.paidBy && (
+                                  <div className="errorMessage" style={{ color: activeTheme.error }}>
+                                    {formErrors.paidBy}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="formGroup">
+                                <label htmlFor="collectedBy" style={{ color: activeTheme.textSecondary }}>
+                                  Collected By <span style={{ color: activeTheme.error }}>*</span>
+                                </label>
+                                <input
+                                  id="collectedBy"
+                                  type="text"
+                                  value={collectedBy}
+                                  onChange={(e) => {
+                                    setCollectedBy(e.target.value);
+                                    setFormErrors({ ...formErrors, collectedBy: null });
+                                  }}
+                                  className="formInput"
+                                  style={{
+                                    backgroundColor: activeTheme.bgPrimary,
+                                    color: activeTheme.textPrimary,
+                                    border: `1px solid ${
+                                      formErrors.collectedBy
+                                        ? activeTheme.error
+                                        : activeTheme.border
+                                    }`,
+                                  }}
+                                />
+                                {formErrors.collectedBy && (
+                                  <div className="errorMessage" style={{ color: activeTheme.error }}>
+                                    {formErrors.collectedBy}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </>
+                        </div>
                       );
                     })()}
-                  </div>
 
-                  <div className="imageUploadSection">
-                    <h4 style={{ color: activeTheme.textPrimary }}>Upload Image</h4>
-                    <div
-                      className="imagePreview"
-                      style={{
-                        backgroundColor: `${activeTheme.bgSecondary}50`,
-                        border: `1px dashed ${activeTheme.border}`,
-                      }}
-                    >
-                      {selectedImage ? (
-                        <img
-                          src={selectedImage}
-                          alt="Selected"
-                          className="previewImage"
-                        />
-                      ) : webcamEnabled ? (
-                        <Webcam
-                          audio={false}
-                          ref={webcamRef}
-                          screenshotFormat="image/jpeg"
-                          width={320}
-                          height={240}
-                          videoConstraints={{
-                            facingMode: 'environment',
-                          }}
-                        />
-                      ) : (
+                    <div className="imageUploadSection">
+                      <div className="imagePreviewPanel">
                         <div
-                          className="placeholderImage"
-                          style={{ color: activeTheme.textSecondary }}
-                        >
-                          <Upload size={48} />
-                          <div>No Image Selected</div>
-                        </div>
-                      )}
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      ref={fileInputRef}
-                      onChange={handleImageSelect}
-                      style={{ display: 'none' }}
-                    />
-                    {formErrors.image && (
-                      <div
-                        className="errorMessage"
-                        style={{ color: activeTheme.error, textAlign: 'center' }}
-                      >
-                        {formErrors.image}
-                      </div>
-                    )}
-                    <div className="imageActions">
-                      <button
-                        type="button"
-                        onClick={handleFileUpload}
-                        className="button"
-                        style={{
-                          backgroundColor: activeTheme.accentPrimary,
-                          color: activeTheme.bgPrimary,
-                        }}
-                      >
-                        <Upload size={16} /> Upload from Device
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setWebcamEnabled(!webcamEnabled)}
-                        className="button"
-                        style={{
-                          backgroundColor: activeTheme.accentPrimary,
-                          color: activeTheme.bgPrimary,
-                        }}
-                      >
-                        <Camera size={16} /> {webcamEnabled ? 'Disable Webcam' : 'Use Webcam'}
-                      </button>
-                      {webcamEnabled && (
-                        <button
-                          type="button"
-                          onClick={handleCapture}
-                          className="button"
+                          className="imagePreview"
                           style={{
-                            backgroundColor: activeTheme.accentPrimary,
-                            color: activeTheme.bgPrimary,
+                            backgroundColor: `${activeTheme.bgSecondary}50`,
+                            border: `1px dashed ${activeTheme.border}`,
                           }}
                         >
-                          <Camera size={16} /> Capture Photo
-                        </button>
-                      )}
+                          {selectedImage ? (
+                            <img
+                              src={selectedImage}
+                              alt="Selected"
+                              className="previewImage"
+                            />
+                          ) : webcamEnabled ? (
+                            <div className="webcamPreviewShell">
+                              <Webcam
+                                key={webcamReloadKey}
+                                audio={false}
+                                ref={webcamRef}
+                                screenshotFormat="image/jpeg"
+                                width={360}
+                                height={480}
+                                className="webcamPreview"
+                                videoConstraints={webcamVideoConstraints}
+                                onUserMedia={handleWebcamReady}
+                                onUserMediaError={handleWebcamError}
+                              />
+                              {webcamLoading && (
+                                <div
+                                  className="webcamStatus"
+                                  style={{ color: activeTheme.textSecondary }}
+                                >
+                                  Starting camera preview...
+                                </div>
+                              )}
+                              {webcamError && (
+                                <div
+                                  className="webcamStatus webcamStatusError"
+                                  style={{ color: activeTheme.error }}
+                                >
+                                  {webcamError}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div
+                              className="placeholderImage"
+                              style={{ color: activeTheme.textSecondary }}
+                            >
+                              <Upload size={48} />
+                              <div>No Photo Selected</div>
+                            </div>
+                          )}
+                        </div>
+                        {formErrors.image && (
+                          <div
+                            className="errorMessage"
+                            style={{ color: activeTheme.error, textAlign: 'center' }}
+                          >
+                            {formErrors.image}
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          ref={fileInputRef}
+                          onChange={handleImageSelect}
+                          style={{ display: 'none' }}
+                        />
+                        <div className="imageActions">
+                          <button
+                            type="button"
+                            onClick={handleFileUpload}
+                            className="button"
+                            style={{
+                              backgroundColor: activeTheme.accentPrimary,
+                              color: activeTheme.bgPrimary,
+                            }}
+                          >
+                            <Upload size={16} /> Upload from Device
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (webcamEnabled) {
+                                resetWebcamState();
+                              } else {
+                                startWebcam();
+                              }
+                            }}
+                            className="button"
+                            style={{
+                              backgroundColor: activeTheme.accentPrimary,
+                              color: activeTheme.bgPrimary,
+                            }}
+                          >
+                            <Camera size={16} /> {webcamEnabled ? 'Disable Webcam' : 'Open Camera'}
+                          </button>
+                          {webcamEnabled && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={reloadWebcam}
+                                className="button"
+                                style={{
+                                  backgroundColor: activeTheme.bgPrimary,
+                                  color: activeTheme.accentPrimary,
+                                  border: `1px solid ${activeTheme.accentPrimary}`,
+                                }}
+                              >
+                                <Camera size={16} /> Reload Camera
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCapture}
+                                className="button"
+                                style={{
+                                  backgroundColor: activeTheme.accentPrimary,
+                                  color: activeTheme.bgPrimary,
+                                }}
+                                disabled={!webcamReady}
+                              >
+                                <Camera size={16} /> Capture Photo
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="formActions">
-                    <button
-                      type="submit"
-                      className="submitButton"
-                      style={{
-                        backgroundColor: activeTheme.accentPrimary,
-                        color: activeTheme.bgPrimary,
-                      }}
-                      disabled={uploadingImage}
-                    >
-                      {uploadingImage ? 'Uploading Image...' : 'Submit Receipt'}
-                    </button>
-                  </div>
                 </form>
               </div>
 
