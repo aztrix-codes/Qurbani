@@ -121,7 +121,7 @@ export default function DashboardPage() {
           <div className="header-left">
             <h1 className="title" style={{ color: activeTheme.textPrimary }}>Dashboard</h1>
             <p className="subtitle" style={{ color: activeTheme.textSecondary }}>
-              Welcome back, <strong style={{ color: activeTheme.accentPrimary }}>{userData?.name || 'User'}</strong>! Here's an overview of your Qurbani shares.
+              Welcome back, <strong style={{ color: activeTheme.accentPrimary }}>{userData?.name || 'User'}</strong>! Here&apos;s an overview of your Qurbani shares.
             </p>
           </div>
           <div className="header-right">

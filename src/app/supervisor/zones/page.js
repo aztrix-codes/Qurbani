@@ -7,6 +7,12 @@ import axios from 'axios';
 import './zoneStyles.css';
 import { useTheme } from '../../themeContext'; // Import the theme hook
 
+const authHeaders = {
+  headers: {
+    'Authorization': 'supervisor'
+  }
+};
+
 export default function ZonesPage() {
   // Get theme from context
   const { activeTheme, currentTheme, toggleTheme, isMounted } = useTheme();
@@ -26,11 +32,6 @@ export default function ZonesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const authHeaders = {
-    headers: {
-      'Authorization': 'supervisor'
-    }
-  };
 
   // Format date to "YYYY-MM-DD HH:MM am/pm" format
   const formatDate = (dateString) => {
@@ -54,9 +55,9 @@ export default function ZonesPage() {
   // Fetch zones on component mount
   useEffect(() => {
     fetchZones();
-  }, []);
+  }, [fetchZones]);
 
-  const fetchZones = async (showLoading = true) => {
+  const fetchZones = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setIsLoading(true);
       const response = await axios.get('/api/zones', authHeaders);
@@ -78,7 +79,7 @@ export default function ZonesPage() {
     } finally {
       if (showLoading) setIsLoading(false);
     }
-  };
+  }, []);
 
   const filteredZones = React.useMemo(() => {
     return zones.filter(zone =>

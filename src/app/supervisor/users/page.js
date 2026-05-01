@@ -7,6 +7,21 @@ import axios from 'axios';
 import './userStyles.css'; // Ensure this path is correct
 import { useTheme } from '../../themeContext'; // Ensure this path is correct
 
+// --- API Endpoints & Constants ---
+const API_USERS_LIST = '/api/users';
+const API_USER_DYNAMIC = '/api/users';
+const API_COSTS = '/api/costs';
+const API_AREAS = '/api/areas';
+const IMGBB_API_KEY = '5d7b25beb20889d2109afe5aa0e19b31';
+const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+
+const authHeaders = {
+  headers: {
+    'Authorization': 'supervisor'
+  }
+};
+// ---------------------
+
 export default function UsersPage() {
   // Use Theme Context
   const { activeTheme, isLight } = useTheme();
@@ -44,22 +59,6 @@ export default function UsersPage() {
   const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef(null); // Ref for file input
 
-  // Define authHeaders
-  const authHeaders = {
-    headers: {
-      'Authorization': 'supervisor'
-    }
-  };
-
-  // --- API Endpoints --- (Corrected based on user confirmation)
-  const API_USERS_LIST = '/api/users'; // GET (list), POST (create)
-  const API_USER_DYNAMIC = '/api/users'; // Base path for dynamic ID routes
-  const API_COSTS = '/api/costs';
-  const API_AREAS = '/api/areas';
-  const IMGBB_API_KEY = '5d7b25beb20889d2109afe5aa0e19b31'; // User provided API key
-  const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
-  // ---------------------
-
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -80,17 +79,17 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
     fetchAreas();
-  }, []);
+  }, [fetchUsers, fetchAreas]);
 
   // Fetch default rates when modal opens for a NEW user
   useEffect(() => {
     if (isModalOpen && !currentEditId) {
       fetchDefaultRates();
     }
-  }, [isModalOpen, currentEditId]);
+  }, [isModalOpen, currentEditId, fetchDefaultRates]);
 
   // Fetch all users
-  const fetchUsers = async (showLoading = true) => {
+  const fetchUsers = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setIsLoading(true);
       const response = await axios.get(API_USERS_LIST, authHeaders);
@@ -118,10 +117,10 @@ export default function UsersPage() {
     } finally {
       if (showLoading) setIsLoading(false);
     }
-  };
+  }, []);
 
   // Fetch areas
-  const fetchAreas = async () => {
+  const fetchAreas = useCallback(async () => {
     try {
       const response = await axios.get(API_AREAS, authHeaders);
       const mappedAreas = response.data.map(area => ({
@@ -136,10 +135,10 @@ export default function UsersPage() {
       console.error('Error fetching areas:', error);
       setErrorMessage('Failed to fetch areas for dropdown');
     }
-  };
+  }, []);
 
   // Fetch default costs
-  const fetchDefaultRates = async () => {
+  const fetchDefaultRates = useCallback(async () => {
     try {
       const response = await axios.get(API_COSTS, authHeaders);
       const rates = {
@@ -162,7 +161,7 @@ export default function UsersPage() {
           setErrorMessage('Failed to fetch default rates.');
       }
     }
-  };
+  }, [currentEditId]);
 
   // Filter users - Memoized
   const filteredUsers = React.useMemo(() => {
