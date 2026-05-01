@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-function page() {
+function SupervisorPage() {
   const router = useRouter();
 
   useEffect(() => {
@@ -13,4 +13,4 @@ function page() {
   return <div></div>;
 }
 
-export default page;
+export default SupervisorPage;

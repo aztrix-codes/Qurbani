@@ -15,7 +15,7 @@ const CustomerManagement = ({ region = 2 }) => {
   const [exportLoading, setExportLoading] = useState(false);
 
   // Fetch customer data (Optimized with region and status filter)
-  const fetchCustomerData = async () => {
+  const fetchCustomerData = React.useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`/api/customers?region=${region}&status=false`, {
@@ -29,11 +29,11 @@ const CustomerManagement = ({ region = 2 }) => {
       console.error('Error fetching customer data:', error);
       setLoading(false);
     }
-  };
+  }, [region]);
 
   useEffect(() => {
     fetchCustomerData();
-  }, [region]);
+  }, [fetchCustomerData]);
 
   // Export to Excel and update statuses (Optimized with Bulk API)
   const exportToExcel = async () => {

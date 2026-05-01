@@ -7,6 +7,31 @@ import axios from 'axios';
 import './areaStyles.css';
 import { useTheme } from '../../themeContext';
 
+const authHeaders = {
+  headers: {
+    'Authorization': 'supervisor'
+  }
+};
+
+// Format date to "YYYY-MM-DD HH:MM am/pm" format
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString; // Return original if invalid date
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+
+  return `${year}-${month}-${day} ${hours}:${minutes} ${ampm}`;
+};
+
 export default function AreasPage() {
   // Use the theme context
   const { currentTheme, activeTheme, isLight, isMounted } = useTheme();
@@ -30,38 +55,8 @@ export default function AreasPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const authHeaders = {
-    headers: {
-      'Authorization': 'supervisor'
-    }
-  };
 
-  // Format date to "YYYY-MM-DD HH:MM am/pm" format
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString; // Return original if invalid date
-    
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    let hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    
-    return `${year}-${month}-${day} ${hours}:${minutes} ${ampm}`;
-  };
-
-  // Fetch areas on component mount
-  useEffect(() => {
-    fetchAreas();
-    fetchZones();
-  }, []);
-
-  const fetchAreas = async (showLoading = true) => {
+  const fetchAreas = React.useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setIsLoading(true);
       const response = await axios.get('/api/areas', authHeaders);
@@ -85,9 +80,9 @@ export default function AreasPage() {
     } finally {
       if (showLoading) setIsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchZones = async () => {
+  const fetchZones = React.useCallback(async () => {
     try {
       const response = await axios.get('/api/zones', authHeaders);
       // Map the API data to match our dropdown needs
@@ -101,7 +96,13 @@ export default function AreasPage() {
       console.error('Error fetching zones:', error);
       setErrorMessage('Failed to fetch zones for dropdown');
     }
-  };
+  }, []);
+
+  // Fetch areas on component mount
+  useEffect(() => {
+    fetchAreas();
+    fetchZones();
+  }, [fetchAreas, fetchZones]);
 
   const filteredAreas = React.useMemo(() => {
     return areas.filter(area =>

@@ -7,6 +7,24 @@ import { FiSend, FiMessageSquare, FiUser } from 'react-icons/fi'; // Removed FiC
 import './feedback.css'; // Ensure this path is correct
 import { useTheme } from '../../themeContext'; // Assuming theme context path
 
+const API_FEEDBACKS = '/api/feedbacks';
+
+// Format date
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString; 
+      return date.toLocaleString(undefined, { 
+          year: 'numeric', month: 'short', day: 'numeric', 
+          hour: 'numeric', minute: '2-digit', hour12: true 
+      });
+  } catch (e) {
+      console.error("Error formatting date:", e);
+      return dateString;
+  }
+};
+
 export default function FeedbackComponent() {
   const { activeTheme, isLight } = useTheme();
   const [feedbackList, setFeedbackList] = useState([]);
@@ -16,31 +34,8 @@ export default function FeedbackComponent() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const API_FEEDBACKS = '/api/feedbacks';
-
-  // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return dateString; 
-        return date.toLocaleString(undefined, { 
-            year: 'numeric', month: 'short', day: 'numeric', 
-            hour: 'numeric', minute: '2-digit', hour12: true 
-        });
-    } catch (e) {
-        console.error("Error formatting date:", e);
-        return dateString;
-    }
-  };
-
-  // Fetch feedback on mount
-  useEffect(() => {
-    fetchFeedback();
-  }, []);
-
   // Fetch feedback function
-  const fetchFeedback = async () => {
+  const fetchFeedback = React.useCallback(async () => {
     setIsLoading(true);
     setErrorMessage('');
     try {
@@ -60,7 +55,12 @@ export default function FeedbackComponent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch feedback on mount
+  useEffect(() => {
+    fetchFeedback();
+  }, [fetchFeedback]);
 
   // Handle input change
   const handleInputChange = (e) => {

@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Webcam from 'react-webcam';
 import { Search, FileText, Eye, Camera, Upload } from 'lucide-react';
 import { useTheme } from '../../themeContext';
@@ -1098,10 +1099,13 @@ const ReceiptScreen = ({ region = 2 }) => {
                           }}
                         >
                           {selectedImage ? (
-                            <img
+                            <Image
                               src={selectedImage}
-                              alt="Selected"
+                              alt="Selected receipt proof"
                               className="previewImage"
+                              fill
+                              sizes="(max-width: 768px) 100vw, 28rem"
+                              unoptimized
                             />
                           ) : webcamEnabled ? (
                             <div className="webcamPreviewShell">

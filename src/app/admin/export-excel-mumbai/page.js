@@ -1,65 +1,68 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Search, Download } from 'lucide-react';
-import { useTheme } from '../../themeContext';
-import ExcelJS from 'exceljs';
-import axios from 'axios';
-import './CustomerManagement.css';
+import React, { useState, useEffect } from "react";
+import { Search, Download } from "lucide-react";
+import { useTheme } from "../../themeContext";
+import ExcelJS from "exceljs";
+import axios from "axios";
+import "./CustomerManagement.css";
 
 const CustomerManagement = ({ region = 1 }) => {
   const { activeTheme } = useTheme();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [customerData, setCustomerData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exportLoading, setExportLoading] = useState(false);
 
   // Fetch customer data (Optimized with region and status filter)
-  const fetchCustomerData = async () => {
+  const fetchCustomerData = React.useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/customers?region=${region}&status=false`, {
-        headers: {
-          'Authorization': 'admin'
-        }
-      });
+      const response = await axios.get(
+        `/api/customers?region=${region}&status=false`,
+        {
+          headers: {
+            Authorization: "admin",
+          },
+        },
+      );
       setCustomerData(response.data);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching customer data:', error);
+      console.error("Error fetching customer data:", error);
       setLoading(false);
     }
-  };
+  }, [region]);
 
   useEffect(() => {
     fetchCustomerData();
-  }, [region]);
+  }, [fetchCustomerData]);
 
   // Export to Excel and update statuses (Optimized with Bulk API)
   const exportToExcel = async () => {
     if (customerData.length === 0) {
-      alert('No data to export');
+      alert("No data to export");
       return;
     }
-    
+
     try {
       setExportLoading(true);
-      
+
       // Create Excel workbook
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Customers');
-      
+      const worksheet = workbook.addWorksheet("Customers");
+
       worksheet.columns = [
-        { header: 'Receipt', key: 'receipt', width: 10 },
-        { header: 'Name', key: 'name', width: 20 },
-        { header: 'Phone', key: 'phone', width: 15 },
-        { header: 'Email', key: 'email', width: 25 },
-        { header: 'Area', key: 'area_name', width: 15 },
-        { header: 'Zone', key: 'zone_name', width: 15 },
-        { header: 'Amount Paid', key: 'amount_paid', width: 15 },
+        { header: "Receipt", key: "receipt", width: 10 },
+        { header: "Name", key: "name", width: 20 },
+        { header: "Phone", key: "phone", width: 15 },
+        { header: "Email", key: "email", width: 25 },
+        { header: "Area", key: "area_name", width: 15 },
+        { header: "Zone", key: "zone_name", width: 15 },
+        { header: "Amount Paid", key: "amount_paid", width: 15 },
       ];
-      
-      customerData.forEach(customer => {
+
+      customerData.forEach((customer) => {
         worksheet.addRow({
           receipt: customer.receipt,
           name: customer.name,
@@ -70,97 +73,97 @@ const CustomerManagement = ({ region = 1 }) => {
           amount_paid: customer.amount_paid,
         });
       });
-      
+
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `${region === 1 ? 'Mumbai' : 'OutOfMumbai'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.download = `${region === 1 ? "Mumbai" : "OutOfMumbai"}_${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       // Update statuses to true for all filtered customers (BULK UPDATE)
-      const customerIds = customerData.map(c => c.id);
-      await axios.patch('/api/customers', {
-        ids: customerIds,
-        status: true
-      }, {
-        headers: { Authorization: 'admin' }
-      });
-      
+      const customerIds = customerData.map((c) => c.id);
+      await axios.patch(
+        "/api/customers",
+        {
+          ids: customerIds,
+          status: true,
+        },
+        {
+          headers: { Authorization: "admin" },
+        },
+      );
+
       await fetchCustomerData();
-      
+
       setExportLoading(false);
-      alert('Data exported successfully and customer statuses updated!');
+      alert("Data exported successfully and customer statuses updated!");
     } catch (error) {
-      console.error('Error exporting to Excel or updating statuses:', error);
+      console.error("Error exporting to Excel or updating statuses:", error);
       setExportLoading(false);
-      alert(`Failed to export data: ${error.message || 'Unknown error'}`);
+      alert(`Failed to export data: ${error.message || "Unknown error"}`);
     }
   };
 
   // Memoize filtered data to prevent unnecessary re-calc
   const filteredData = React.useMemo(() => {
     const searchStr = searchTerm.toLowerCase();
-    return customerData.filter(item =>
-      Object.values(item).some(val =>
-        val && String(val).toLowerCase().includes(searchStr)
-      )
+    return customerData.filter((item) =>
+      Object.values(item).some(
+        (val) => val && String(val).toLowerCase().includes(searchStr),
+      ),
     );
   }, [customerData, searchTerm]);
 
   // Memoize theme styles
-  const themeStyles = React.useMemo(() => ({
-    container: { backgroundColor: activeTheme.bgPrimary },
-    card: {
-      backgroundColor: activeTheme.bgSecondary,
-      border: `1px solid ${activeTheme.border}`,
-    },
-    header: {
-      backgroundColor: activeTheme.pageHeaderBG,
-      color: activeTheme.pageHeaderText,
-    },
-    tableHeader: {
-      backgroundColor: activeTheme.bgSecondary,
-      borderBottom: `1px solid ${activeTheme.border}`,
-    },
-    tableLabel: { color: activeTheme.textSecondary || '#6b7280' },
-    dataRowBorder: { borderBottom: `1px solid ${activeTheme.border}20` },
-    textPrimary: { color: activeTheme.textPrimary },
-    accentPrimary: { color: activeTheme.accentPrimary }
-  }), [activeTheme]);
+  const themeStyles = React.useMemo(
+    () => ({
+      container: { backgroundColor: activeTheme.bgPrimary },
+      card: {
+        backgroundColor: activeTheme.bgSecondary,
+        border: `1px solid ${activeTheme.border}`,
+      },
+      header: {
+        backgroundColor: activeTheme.pageHeaderBG,
+        color: activeTheme.pageHeaderText,
+      },
+      tableHeader: {
+        backgroundColor: activeTheme.bgSecondary,
+        borderBottom: `1px solid ${activeTheme.border}`,
+      },
+      tableLabel: { color: activeTheme.textSecondary || "#6b7280" },
+      dataRowBorder: { borderBottom: `1px solid ${activeTheme.border}20` },
+      textPrimary: { color: activeTheme.textPrimary },
+      accentPrimary: { color: activeTheme.accentPrimary },
+    }),
+    [activeTheme],
+  );
 
   return (
-    <div 
-      className="customerManagementContainer" 
-      style={themeStyles.container}
-    >
-      <div 
-        className="customerManagementCard" 
-        style={themeStyles.card}
-      >
+    <div className="customerManagementContainer" style={themeStyles.container}>
+      <div className="customerManagementCard" style={themeStyles.card}>
         {/* Header Section */}
-        <div 
-          className="customerManagementHeader" 
-          style={themeStyles.header}
-        >
+        <div className="customerManagementHeader" style={themeStyles.header}>
           <div className="headerContent">
             <div className="headerTitle">
               <h1 style={{ color: activeTheme.pageHeaderText }}>
-                Pending Records - {region === 1 ? 'Mumbai' : 'Out of Mumbai'}
+                Pending Records - {region === 1 ? "Mumbai" : "Out of Mumbai"}
               </h1>
             </div>
-            
+
             <div className="headerActions">
               {/* Search */}
               <div className="searchContainer">
-                <Search 
-                  size={16} 
+                <Search
+                  size={16}
                   color={`${activeTheme.pageHeaderText}B3`}
-                  className="searchIcon" 
+                  className="searchIcon"
                 />
                 <input
                   type="text"
@@ -175,16 +178,19 @@ const CustomerManagement = ({ region = 1 }) => {
                   className="searchInput"
                 />
               </div>
-              
+
               {/* Export Button */}
-              <button 
+              <button
                 onClick={exportToExcel}
                 style={{
                   backgroundColor: `${activeTheme.bgSecondary}33`,
                   color: activeTheme.pageHeaderText,
                   border: `1px solid ${activeTheme.pageHeaderText}33`,
                   opacity: exportLoading || customerData.length === 0 ? 0.7 : 1,
-                  cursor: exportLoading || customerData.length === 0 ? 'not-allowed' : 'pointer',
+                  cursor:
+                    exportLoading || customerData.length === 0
+                      ? "not-allowed"
+                      : "pointer",
                 }}
                 className="exportBtn"
                 disabled={exportLoading || customerData.length === 0}
@@ -200,14 +206,17 @@ const CustomerManagement = ({ region = 1 }) => {
               </button>
             </div>
           </div>
-          
+
           {/* Stats */}
-          <div 
+          <div
             className="stats"
             style={{ borderTop: `1px solid ${activeTheme.pageHeaderText}33` }}
           >
             <div style={{ color: `${activeTheme.pageHeaderText}CC` }}>
-              Total Records: <span style={{ color: activeTheme.pageHeaderText }}>{customerData.length}</span>
+              Total Records:{" "}
+              <span style={{ color: activeTheme.pageHeaderText }}>
+                {customerData.length}
+              </span>
             </div>
           </div>
         </div>
@@ -215,7 +224,7 @@ const CustomerManagement = ({ region = 1 }) => {
         {/* Table Section */}
         <div className="tableContainer">
           {/* Table Header */}
-          <div 
+          <div
             className="tableHeader"
             style={{
               backgroundColor: activeTheme.bgSecondary,
@@ -223,43 +232,43 @@ const CustomerManagement = ({ region = 1 }) => {
             }}
           >
             <div className="tableRow">
-              <div 
+              <div
                 className="tableCell cellId"
                 style={{ color: activeTheme.textSecondary }}
               >
                 Sr no.
               </div>
-              <div 
+              <div
                 className="tableCell cellName"
                 style={{ color: activeTheme.textSecondary }}
               >
                 NAME
               </div>
-              <div 
+              <div
                 className="tableCell cellPhone"
                 style={{ color: activeTheme.textSecondary }}
               >
                 PHONE
               </div>
-              <div 
+              <div
                 className="tableCell cellEmail"
                 style={{ color: activeTheme.textSecondary }}
               >
                 EMAIL
               </div>
-              <div 
+              <div
                 className="tableCell cellArea"
                 style={{ color: activeTheme.textSecondary }}
               >
                 AREA
               </div>
-              <div 
+              <div
                 className="tableCell cellZone"
                 style={{ color: activeTheme.textSecondary }}
               >
                 ZONE
               </div>
-              <div 
+              <div
                 className="tableCell cellStatus"
                 style={{ color: activeTheme.textSecondary }}
               >
@@ -273,12 +282,14 @@ const CustomerManagement = ({ region = 1 }) => {
             {loading ? (
               <div className="loadingState">
                 <div className="spinner"></div>
-                <p style={{ color: activeTheme.textSecondary }}>Loading data...</p>
+                <p style={{ color: activeTheme.textSecondary }}>
+                  Loading data...
+                </p>
               </div>
             ) : filteredData.length > 0 ? (
               filteredData.map((item, index) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="dataRow"
                   style={{
                     borderBottom: `1px solid ${activeTheme.border}`,
@@ -286,49 +297,59 @@ const CustomerManagement = ({ region = 1 }) => {
                 >
                   {/* ID */}
                   <div className="tableCell cellId">
-                    <span style={{ color: activeTheme.accentPrimary, fontWeight: 700 }}>
+                    <span
+                      style={{
+                        color: activeTheme.accentPrimary,
+                        fontWeight: 700,
+                      }}
+                    >
                       {index + 1}
                     </span>
                   </div>
-                  
+
                   {/* Name */}
                   <div className="tableCell cellName">
-                    <span style={{ color: activeTheme.textPrimary, fontWeight: 500 }}>
+                    <span
+                      style={{
+                        color: activeTheme.textPrimary,
+                        fontWeight: 500,
+                      }}
+                    >
                       {item.name}
                     </span>
                   </div>
-                  
+
                   {/* Phone */}
                   <div className="tableCell cellPhone">
                     <span style={{ color: activeTheme.textSecondary }}>
-                      {item.phone || 'N/A'}
+                      {item.phone || "N/A"}
                     </span>
                   </div>
-                  
+
                   {/* Email */}
                   <div className="tableCell cellEmail">
                     <span style={{ color: activeTheme.textSecondary }}>
-                      {item.email || 'N/A'}
+                      {item.email || "N/A"}
                     </span>
                   </div>
-                  
+
                   {/* Area */}
                   <div className="tableCell cellArea">
                     <span style={{ color: activeTheme.textSecondary }}>
                       {item.area_name}
                     </span>
                   </div>
-                  
+
                   {/* Zone */}
                   <div className="tableCell cellZone">
                     <span style={{ color: activeTheme.textSecondary }}>
                       {item.zone_name}
                     </span>
                   </div>
-                  
+
                   {/* Status */}
                   <div className="tableCell cellStatus">
-                    <span 
+                    <span
                       className="statusBadgePending"
                       style={{
                         backgroundColor: `${activeTheme.warning}20`,
@@ -346,7 +367,9 @@ const CustomerManagement = ({ region = 1 }) => {
                 <div className="emptyIcon">
                   <Search size={48} color={activeTheme.textSecondary} />
                 </div>
-                <h3 style={{ color: activeTheme.textPrimary }}>No records found</h3>
+                <h3 style={{ color: activeTheme.textPrimary }}>
+                  No records found
+                </h3>
                 <p style={{ color: activeTheme.textSecondary }}>
                   Try adjusting your search criteria.
                 </p>
