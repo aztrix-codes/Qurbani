@@ -2,6 +2,71 @@
 import { NextResponse } from 'next/server';
 import pool from '../db';
 import { checkAuth, checkLockStatus } from '../apiUtils';
+import {
+  notifyCustomerStatusUpdated,
+  notifySharesSubmitted,
+} from '../emailNotifications';
+
+const normalizeCustomerPayload = (customerData) => ({
+  receipt: customerData.receipt,
+  name: customerData.name,
+  phone: customerData.phone || null,
+  email: customerData.email || null,
+  type: customerData.type || 1,
+  region: customerData.region || 2,
+  user_name: customerData.user_name,
+  area_name: customerData.area_name,
+  area_incharge: customerData.area_incharge || '',
+  zone_name: customerData.zone_name,
+  zone_incharge: customerData.zone_incharge || '',
+  status: customerData.status !== undefined ? customerData.status : false,
+  payment_status: customerData.payment_status !== undefined ? customerData.payment_status : false,
+  amount_paid: customerData.amount_paid || 0.00
+});
+
+const validateCustomerPayload = (customerData) => {
+  if (!customerData.receipt || !customerData.name || !customerData.user_name ||
+      !customerData.area_name || !customerData.zone_name) {
+    return 'Missing required fields (receipt, name, user_name, area_name, zone_name)';
+  }
+
+  return null;
+};
+
+const getUserByName = async (userName) => {
+  const [users] = await pool.query(
+    `SELECT id, name, phone, email, area_name, zone_name, regions_incharge_of
+     FROM users WHERE name = ? LIMIT 1`,
+    [userName]
+  );
+
+  return users[0] || null;
+};
+
+const groupCustomerUpdatesByUser = (rows) => {
+  const groups = new Map();
+
+  rows.forEach((row) => {
+    const key = `${row.user_name}:${row.user_email || ''}`;
+    const existing = groups.get(key) || {
+      userName: row.user_name,
+      email: row.user_email,
+      areaName: row.area_name,
+      zoneName: row.zone_name,
+      receipts: new Set(),
+      count: 0,
+    };
+
+    existing.receipts.add(row.receipt);
+    existing.count += 1;
+    groups.set(key, existing);
+  });
+
+  return Array.from(groups.values()).map((group) => ({
+    ...group,
+    receipts: Array.from(group.receipts),
+  }));
+};
 
 // GET customers
 export async function GET(request) {
@@ -51,6 +116,8 @@ export async function GET(request) {
 
 // CREATE new customer
 export async function POST(request) {
+  let connection;
+
   try {
     const authCheck = checkAuth(request.headers.get('authorization'));
     if (authCheck.error) return NextResponse.json(authCheck, { status: authCheck.status });
@@ -58,57 +125,66 @@ export async function POST(request) {
     const lockCheck = await checkLockStatus();
     if (lockCheck.locked) return NextResponse.json(lockCheck, { status: lockCheck.status });
 
-    const customerData = await request.json();
-    
-    // Validate required fields
-    if (!customerData.receipt || !customerData.name || !customerData.user_name || 
-        !customerData.area_name || !customerData.zone_name) {
-      return NextResponse.json(
-        { error: 'Missing required fields (receipt, name, user_name, area_name, zone_name)' },
-        { status: 400 }
+    const requestBody = await request.json();
+    const isBatchRequest = Array.isArray(requestBody.customers);
+    const customerItems = isBatchRequest ? requestBody.customers : [requestBody];
+
+    if (customerItems.length === 0) {
+      return NextResponse.json({ error: 'At least one customer is required' }, { status: 400 });
+    }
+
+    for (const customerData of customerItems) {
+      const validationError = validateCustomerPayload(customerData);
+      if (validationError) {
+        return NextResponse.json({ error: validationError }, { status: 400 });
+      }
+
+      // Security: Users can only submit for themselves
+      if (authCheck.type === 'user' && customerData.user_name !== authCheck.name) {
+        return NextResponse.json({ error: 'Cannot submit shares for another user' }, { status: 403 });
+      }
+    }
+
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    const insertedIds = [];
+
+    for (const customerData of customerItems) {
+      const [result] = await connection.query(
+        `INSERT INTO customers SET ?`,
+        [normalizeCustomerPayload(customerData)]
       );
+
+      insertedIds.push(result.insertId);
     }
 
-    // Security: Users can only submit for themselves
-    if (authCheck.type === 'user' && customerData.user_name !== authCheck.name) {
-      return NextResponse.json({ error: 'Cannot submit shares for another user' }, { status: 403 });
-    }
+    await connection.commit();
 
-    // Insert new customer
-    const [result] = await pool.query(
-      `INSERT INTO customers SET ?`,
-      [{
-        receipt: customerData.receipt,
-        name: customerData.name,
-        phone: customerData.phone || null,
-        email: customerData.email || null,
-        type: customerData.type || 1,
-        region: customerData.region || 2,
-        user_name: customerData.user_name,
-        area_name: customerData.area_name,
-        area_incharge: customerData.area_incharge || '',
-        zone_name: customerData.zone_name,
-        zone_incharge: customerData.zone_incharge || '',
-        status: customerData.status !== undefined ? customerData.status : false,
-        payment_status: customerData.payment_status !== undefined ? customerData.payment_status : false,
-        amount_paid: customerData.amount_paid || 0.00
-      }]
+    const [newCustomers] = await pool.query(
+      `SELECT * FROM customers WHERE id IN (?) ORDER BY id ASC`,
+      [insertedIds]
     );
 
-    // Return the created customer
-    const [newCustomer] = await pool.query(
-      `SELECT * FROM customers WHERE id = ?`,
-      [result.insertId]
-    );
+    const user = await getUserByName(newCustomers[0]?.user_name);
+    await notifySharesSubmitted({ user, customers: newCustomers });
 
-    return NextResponse.json(newCustomer[0], { status: 201 });
+    return NextResponse.json(isBatchRequest ? newCustomers : newCustomers[0], { status: 201 });
 
   } catch (error) {
+    if (connection) {
+      await connection.rollback();
+    }
+
     console.error('Error creating customer:', error);
     return NextResponse.json(
       { error: 'Failed to create customer' },
       { status: 500 }
     );
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 }
 
@@ -212,10 +288,27 @@ export async function PATCH(request) {
       return NextResponse.json({ error: 'No field to update provided' }, { status: 400 });
     }
 
+    const [customersBeforeUpdate] = await pool.query(
+      `SELECT 
+        c.id, c.receipt, c.user_name, c.area_name, c.zone_name,
+        u.email AS user_email
+      FROM customers c
+      LEFT JOIN users u ON u.name = c.user_name
+      WHERE c.id IN (?)`,
+      [ids]
+    );
+
     const [result] = await pool.query(
       `UPDATE customers SET ? WHERE id IN (?)`,
       [updateFields, ids]
     );
+
+    const groupedUpdates = groupCustomerUpdatesByUser(customersBeforeUpdate);
+    await notifyCustomerStatusUpdated({
+      groupedUpdates,
+      updateFields,
+      actorType: authCheck.type,
+    });
 
     return NextResponse.json({ 
       message: `Updated ${result.affectedRows} customers`,

@@ -139,7 +139,7 @@ export default function AddSharesPage() {
 
     setIsSubmitting(true);
     
-    const customerPromises = validCards.map(card => {
+    const customers = validCards.map(card => {
         const customerData = {
             receipt: receiptNumber, name: card.text, phone: mobileNumber || null,
             type: card.type, region: region, user_name: userData.name,
@@ -148,15 +148,15 @@ export default function AddSharesPage() {
             status: false, payment_status: false, amount_paid: 0.00
         };
         const count = getHissaWeight(card.type);
-        return Array(count).fill(0).map(() => axios.post('/api/customers', customerData, {
-            headers: {
-                'Authorization': `user ${userData.name}`
-            }
-        }));
+        return Array(count).fill(0).map(() => customerData);
     }).flat();
 
     try {
-        await Promise.all(customerPromises);
+        await axios.post('/api/customers', { customers }, {
+            headers: {
+                'Authorization': `user ${userData.name}`
+            }
+        });
         setSuccess('Shares submitted successfully!');
         setHissaCards(createInitialCards());
         setReceiptNumber("");

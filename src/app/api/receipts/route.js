@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import pool from '../db';
 import { checkAuth, checkLockStatus } from '../apiUtils';
+import { notifyReceiptGenerated } from '../emailNotifications';
 
 const isNonEmptyString = (value) =>
   typeof value === 'string' && value.trim().length > 0;
@@ -284,6 +285,19 @@ export async function POST(request) {
       `SELECT * FROM receipts WHERE id = ?`,
       [result.insertId]
     );
+
+    const [recipientUsers] = await pool.query(
+      `SELECT email FROM users WHERE name = ? LIMIT 1`,
+      [payload.userName]
+    );
+
+    await notifyReceiptGenerated({
+      receipt: {
+        ...newReceipt[0],
+        recipient_email: recipientUsers[0]?.email || newReceipt[0]?.email || payload.email,
+      },
+      actorType: authCheck.type,
+    });
 
     return NextResponse.json(newReceipt[0], { status: 201 });
   } catch (error) {

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react'; // Added useRef
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useRef
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiEye, FiEyeOff, FiUpload } from 'react-icons/fi'; // Added FiUpload
 import axios from 'axios';
 import './userStyles.css'; // Ensure this path is correct
@@ -74,19 +74,6 @@ export default function UsersPage() {
     hours = hours ? hours : 12;
     return `${year}-${month}-${day} ${hours}:${minutes} ${ampm}`;
   };
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchUsers();
-    fetchAreas();
-  }, [fetchUsers, fetchAreas]);
-
-  // Fetch default rates when modal opens for a NEW user
-  useEffect(() => {
-    if (isModalOpen && !currentEditId) {
-      fetchDefaultRates();
-    }
-  }, [isModalOpen, currentEditId, fetchDefaultRates]);
 
   // Fetch all users
   const fetchUsers = useCallback(async (showLoading = true) => {
@@ -162,6 +149,19 @@ export default function UsersPage() {
       }
     }
   }, [currentEditId]);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchUsers();
+    fetchAreas();
+  }, [fetchUsers, fetchAreas]);
+
+  // Fetch default rates when modal opens for a NEW user
+  useEffect(() => {
+    if (isModalOpen && !currentEditId) {
+      fetchDefaultRates();
+    }
+  }, [isModalOpen, currentEditId, fetchDefaultRates]);
 
   // Filter users - Memoized
   const filteredUsers = React.useMemo(() => {

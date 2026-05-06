@@ -1,3 +1,22 @@
+CREATE DATABASE IF NOT EXISTS defaultdb;
+USE defaultdb;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP VIEW IF EXISTS user_summary;
+DROP VIEW IF EXISTS dashboard;
+
+DROP TABLE IF EXISTS receipts;
+DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS feedback;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS areas;
+DROP TABLE IF EXISTS zones;
+DROP TABLE IF EXISTS supervisor;
+DROP TABLE IF EXISTS admin;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 CREATE TABLE admin (
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(255) NOT NULL UNIQUE,
@@ -352,80 +371,3 @@ LEFT JOIN (
 )
 WHERE u.publish = TRUE
 ORDER BY u.name;
-
-
-
-INSERT INTO admin (username, password, mumbai_cost, out_of_mumbai_cost, lock_status) 
-VALUES ('admin_user', 'hashed_password', 1500.00, 2000.00, FALSE);
-
-INSERT INTO supervisor (username, password) 
-VALUES ('supervisor_user', 'hashed_password');
-
-INSERT INTO zones (name, incharge, phone, email, publish) 
-VALUES 
-('Zone 1', 'John Doe', '9876543210', 'john@example.com', TRUE),
-('Zone 2', 'Alice Johnson', '9876543220', 'alice@example.com', TRUE);
-
-INSERT INTO areas (name, incharge, zone_name, zone_incharge, phone, email, publish) 
-VALUES 
-('Area 1', 'Jane Smith', 'Zone 1', 'John Doe', '9876543211', 'jane@example.com', TRUE),
-('Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', '9876543212', 'bob@example.com', TRUE),
-('Area 3', 'Carol Brown', 'Zone 2', 'Alice Johnson', '9876543213', 'carol@example.com', TRUE);
-
-INSERT INTO users (name, phone, email, password, pfp, area_name, area_incharge, zone_name, zone_incharge, regions_incharge_of, rate_r1, rate_r2, publish) 
-VALUES 
-('User Name', '9876543214', 'user@example.com', '123456789', 'https://example.com/profile.jpg', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', 2, 100.00, 150.00, TRUE),
-('User Two', '9876543215', 'user2@example.com', '987654321', 'https://example.com/profile2.jpg', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', 1, 120.00, 180.00, TRUE),
-('User Three', '9876543216', 'user3@example.com', '123987456', 'https://example.com/profile3.jpg', 'Area 3', 'Carol Brown', 'Zone 2', 'Alice Johnson', 0, 110.00, 160.00, TRUE);
-
-INSERT INTO feedback (name, feedback) 
-VALUES 
-('John Smith', 'This is a sample feedback that can contain multiple paragraphs and a lot of text content. The service was excellent and I would highly recommend it to others.'),
-('Mary Johnson', 'Great service and professional staff. Very satisfied with the results.');
-
-INSERT INTO customers (receipt, name, phone, email, type, region, user_name, area_name, area_incharge, zone_name, zone_incharge, status, payment_status, amount_paid) 
-VALUES 
-(1001, 'Customer One', '9876543217', 'customer1@example.com', 1, 2, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', TRUE, TRUE, 150.00),
-(1002, 'Customer Two', '9876543218', 'customer2@example.com', 1, 1, 'User Two', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', TRUE, FALSE, 0.00),
-(1003, 'Customer Three', '9876543219', 'customer3@example.com', 2, 2, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', TRUE, TRUE, 100.00),
-(1004, 'Customer Four', '9876543220', 'customer4@example.com', 1, 2, 'User Three', 'Area 3', 'Carol Brown', 'Zone 2', 'Alice Johnson', FALSE, FALSE, 0.00),
-(1005, 'Customer Five', '9876543221', 'customer5@example.com', 1, 1, 'User Two', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', TRUE, TRUE, 120.00),
-(1006, 'Customer Six', '9876543222', 'customer6@example.com', 1, 1, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', TRUE, FALSE, 0.00),
-(1007, 'Customer Seven', '9876543223', 'customer7@example.com', 1, 1, 'User Two', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', TRUE, TRUE, 120.00),
-(1008, 'Customer Eight', '9876543224', 'customer8@example.com', 1, 1, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', FALSE, FALSE, 0.00),
-(1009, 'Customer Nine', '9876543225', 'customer9@example.com', 2, 1, 'User Two', 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe', TRUE, FALSE, 0.00),
-(1010, 'Customer Ten', '9876543226', 'customer10@example.com', 1, 1, 'User Name', 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe', TRUE, TRUE, 100.00);
-
-INSERT INTO receipts (user_name, phone, email, paid_by, collected_by, img, rate, hissa, total_amt, area_name, area_incharge, zone_name, zone_incharge) 
-VALUES 
-('User Name', '9876543217', 'customer1@example.com', 'Customer One', 'User Name', 'https://example.com/profile.jpg', 100.00, 5, 500.00, 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe'),
-('User Name', '9876543219', 'customer3@example.com', 'Customer Three', 'User Name', 'https://example.com/profile1.jpg', 100.00, 3, 300.00, 'Area 1', 'Jane Smith', 'Zone 1', 'John Doe'),
-('User Two', '9876543221', 'customer5@example.com', 'Customer Five', 'User Two', 'https://example.com/profile2.jpg', 120.00, 4, 480.00, 'Area 2', 'Bob Wilson', 'Zone 1', 'John Doe');
-
--- Sample queries to view the auto-updating data
--- SELECT * FROM user_summary;
--- SELECT * FROM animal_count;
-
--- Additional useful queries for animal count analysis
--- SELECT * FROM user_summary;
--- SELECT * FROM animal_count;
-
--- Query to see region-wise breakdown by zone
--- SELECT zone_name, 
---        SUM(region1_total) as total_region1, 
---        SUM(region1_divided_by_7) as region1_floor_div_7,
---        SUM(region1_paid) as region1_paid, 
---        SUM(region1_pending) as region1_pending,
---        SUM(region1_amount_expected) as region1_expected_amount,
---        SUM(region2_total) as total_region2, 
---        SUM(region2_paid) as region2_paid, 
---        SUM(region2_pending) as region2_pending,
---        SUM(region2_amount_expected) as region2_expected_amount
--- FROM animal_count 
--- GROUP BY zone_name;
-
--- Query to see only verified customers (status = TRUE)
--- SELECT * FROM customers WHERE status = TRUE;
-
--- Query to see unverified customers (status = FALSE) - these are excluded from views
--- SELECT * FROM customers WHERE status = FALSE;

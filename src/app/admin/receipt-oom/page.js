@@ -17,6 +17,11 @@ const formatCurrency = (amount) => {
   }).format(amount || 0);
 };
 
+const isPaidShare = (customer) =>
+  customer?.payment_status === true ||
+  customer?.payment_status === 1 ||
+  customer?.payment_status === '1';
+
 const ReceiptScreen = ({ region = 2 }) => {
   const { activeTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
@@ -181,7 +186,7 @@ const ReceiptScreen = ({ region = 2 }) => {
     if (selectedRowData) {
       const totalShares = selectedRowData?.length || 0;
       const sharesPaid = selectedRowData
-        ? selectedRowData.filter((customer) => customer.payment_status).length
+        ? selectedRowData.filter((customer) => isPaidShare(customer)).length
         : 0;
       setPendingShares(totalShares - sharesPaid);
     }
@@ -316,7 +321,7 @@ const ReceiptScreen = ({ region = 2 }) => {
       const area = userViewDetail?.area_name;
       const zone = getZoneNameFromArea(area);
       const unpaidCustomers = (selectedRowData || []).filter(
-        (customer) => !customer.payment_status
+        (customer) => !isPaidShare(customer)
       );
       const customersToUpdate = unpaidCustomers.slice(0, howMuchPaying);
       const customerIdsToUpdate = customersToUpdate.map((customer) => customer.id);
@@ -337,7 +342,7 @@ const ReceiptScreen = ({ region = 2 }) => {
         area_name: area,
         area_incharge:
           areasList.find((area) => area.name === userViewDetail?.area_name)
-            ?.area_incharge || '',
+            ?.incharge || userViewDetail?.area_incharge || '',
         zone_name: zone,
         zone_incharge: userViewDetail?.zone_incharge || '',
         phone: userViewDetail?.phone || null,
@@ -395,7 +400,7 @@ const ReceiptScreen = ({ region = 2 }) => {
   const stats = React.useMemo(() => {
     const totalU = filteredUsers.length;
     const totalC = customerData.length;
-    const paidC = customerData.filter(c => c.payment_status).length;
+    const paidC = customerData.filter(c => isPaidShare(c)).length;
     return {
       totalUsers: totalU,
       totalCustomers: totalC,
@@ -558,7 +563,7 @@ const ReceiptScreen = ({ region = 2 }) => {
               groupedCustomers.map((group, index) => {
                 const totalShares = group.customers.length;
                 const sharesPaid = group.customers.filter(
-                  (customer) => customer.payment_status
+                  (customer) => isPaidShare(customer)
                 ).length;
                 const zoneName = getZoneNameFromArea(group.user.area_name);
 
@@ -828,15 +833,15 @@ const ReceiptScreen = ({ region = 2 }) => {
                           <div
                             className="statusBadge"
                             style={{
-                              backgroundColor: record.payment_status
+                              backgroundColor: isPaidShare(record)
                                 ? `${activeTheme.success}20`
                                 : `${activeTheme.error}20`,
-                              color: record.payment_status
+                              color: isPaidShare(record)
                                 ? activeTheme.success
                                 : activeTheme.error,
                             }}
                           >
-                            {record.payment_status ? 'Paid' : 'Unpaid'}
+                            {isPaidShare(record) ? 'Paid' : 'Unpaid'}
                           </div>
                         </div>
                       </div>
@@ -905,7 +910,7 @@ const ReceiptScreen = ({ region = 2 }) => {
                     {(() => {
                       const totalShares = selectedRowData?.length || 0;
                       const sharesPaid = selectedRowData
-                        ? selectedRowData.filter((customer) => customer.payment_status)
+                        ? selectedRowData.filter((customer) => isPaidShare(customer))
                             .length
                         : 0;
                       const pendingShares = totalShares - sharesPaid;

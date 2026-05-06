@@ -2,6 +2,12 @@
 import { NextResponse } from 'next/server';
 import pool from '../db';
 import { checkAuth, checkLockStatus } from '../apiUtils';
+import {
+  getChangedUserFields,
+  notifyUserCreated,
+  notifyUserDeleted,
+  notifyUserUpdated,
+} from '../emailNotifications';
 
 export async function GET(request) {
   try {
@@ -86,6 +92,12 @@ export async function POST(request) {
       [result.insertId]
     );
 
+    await notifyUserCreated({
+      user: newUser[0],
+      password: userData.password,
+      actorType: authCheck.type,
+    });
+
     return NextResponse.json(newUser[0], { status: 201 });
 
   } catch (error) {
@@ -121,6 +133,26 @@ export async function PUT(request) {
         { status: 400 }
       );
     }
+
+    const [previousUserRows] = await pool.query(
+      `SELECT 
+        id, name, phone, email, password, pfp, 
+        area_name, area_incharge, 
+        zone_name, zone_incharge, 
+        regions_incharge_of, rate_r1, rate_r2, 
+        publish, created_at, updated_at
+      FROM users WHERE id = ?`,
+      [userData.id]
+    );
+
+    if (previousUserRows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const previousUser = previousUserRows[0];
 
     // Build update fields dynamically
     const updateFields = {};
@@ -186,6 +218,19 @@ export async function PUT(request) {
         );
     }
 
+    const changedFields = getChangedUserFields(previousUser, {
+      ...updatedUser[0],
+      password: updateFields.password || previousUser.password,
+    }, Object.keys(updateFields));
+
+    await notifyUserUpdated({
+      previousUser,
+      user: updatedUser[0],
+      changedFields,
+      actorType: authCheck.type,
+      password: updateFields.password,
+    });
+
     return NextResponse.json(updatedUser[0]);
 
   } catch (error) {
@@ -223,7 +268,10 @@ export async function DELETE(request) {
 
     // First check if user exists
     const [user] = await pool.query(
-      'SELECT id FROM users WHERE id = ?',
+      `SELECT 
+        id, name, phone, email, area_name, area_incharge,
+        zone_name, zone_incharge, regions_incharge_of
+      FROM users WHERE id = ?`,
       [id]
     );
 
@@ -239,6 +287,11 @@ export async function DELETE(request) {
       'DELETE FROM users WHERE id = ?',
       [id]
     );
+
+    await notifyUserDeleted({
+      user: user[0],
+      actorType: authCheck.type,
+    });
 
     return NextResponse.json({ message: 'User deleted successfully' });
 

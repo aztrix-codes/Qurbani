@@ -1,6 +1,11 @@
 // app/api/users/[id]/route.js
 import { NextResponse } from 'next/server';
 import pool from '../../db';
+import {
+  getChangedUserFields,
+  notifyUserDeleted,
+  notifyUserUpdated,
+} from '../../emailNotifications';
 
 // --- GET Handler (Existing) ---
 export async function GET(request, { params }) {
@@ -127,6 +132,26 @@ export async function PUT(request, { params }) {
       );
     }
 
+    const [previousUserRows] = await pool.query(
+      `SELECT 
+        id, name, phone, email, password, pfp, 
+        area_name, area_incharge, 
+        zone_name, zone_incharge, 
+        regions_incharge_of, rate_r1, rate_r2, 
+        publish, created_at, updated_at
+      FROM users WHERE id = ?`,
+      [id]
+    );
+
+    if (previousUserRows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const previousUser = previousUserRows[0];
+
     // Add the user ID to the end of the query parameters for the WHERE clause
     queryParams.push(id);
 
@@ -140,6 +165,41 @@ export async function PUT(request, { params }) {
         { status: 404 }
       );
     }
+
+    const [updatedUserRows] = await pool.query(
+      `SELECT 
+        id, name, phone, email, password, pfp, 
+        area_name, area_incharge, 
+        zone_name, zone_incharge, 
+        regions_incharge_of, rate_r1, rate_r2, 
+        publish, created_at, updated_at
+      FROM users WHERE id = ?`,
+      [id]
+    );
+
+    const changedFields = getChangedUserFields(previousUser, updatedUserRows[0], [
+      'name',
+      'phone',
+      'email',
+      'password',
+      'pfp',
+      'area_name',
+      'area_incharge',
+      'zone_name',
+      'zone_incharge',
+      'regions_incharge_of',
+      'rate_r1',
+      'rate_r2',
+      'publish',
+    ]);
+
+    await notifyUserUpdated({
+      previousUser,
+      user: updatedUserRows[0],
+      changedFields,
+      actorType: authType.toLowerCase(),
+      password: password !== undefined && password !== '' ? password : undefined,
+    });
 
     return NextResponse.json({ message: 'User updated successfully' });
 
@@ -187,6 +247,21 @@ export async function DELETE(request, { params }) {
       );
     }
 
+    const [userRows] = await pool.query(
+      `SELECT 
+        id, name, phone, email, area_name, area_incharge,
+        zone_name, zone_incharge, regions_incharge_of
+      FROM users WHERE id = ?`,
+      [id]
+    );
+
+    if (userRows.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     const [result] = await pool.query('DELETE FROM users WHERE id = ?', [id]);
 
     if (result.affectedRows === 0) {
@@ -195,6 +270,11 @@ export async function DELETE(request, { params }) {
         { status: 404 }
       );
     }
+
+    await notifyUserDeleted({
+      user: userRows[0],
+      actorType: authType.toLowerCase(),
+    });
 
     return NextResponse.json({ message: 'User deleted successfully' });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX } from 'react-icons/fi';
 import { FiSun, FiMoon } from 'react-icons/fi';
 import axios from 'axios';
@@ -52,11 +52,6 @@ export default function ZonesPage() {
     return `${year}-${month}-${day} ${hours}:${minutes} ${ampm}`;
   };
 
-  // Fetch zones on component mount
-  useEffect(() => {
-    fetchZones();
-  }, [fetchZones]);
-
   const fetchZones = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setIsLoading(true);
@@ -80,6 +75,11 @@ export default function ZonesPage() {
       if (showLoading) setIsLoading(false);
     }
   }, []);
+
+  // Fetch zones on component mount
+  useEffect(() => {
+    fetchZones();
+  }, [fetchZones]);
 
   const filteredZones = React.useMemo(() => {
     return zones.filter(zone =>

@@ -39,7 +39,11 @@ export default function FeedbackComponent() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const response = await axios.get(API_FEEDBACKS);
+      const response = await axios.get(API_FEEDBACKS, {
+        headers: {
+          'Authorization': 'supervisor'
+        }
+      });
       const mappedFeedback = response.data.map(fb => ({
           ...fb,
           formattedDate: formatDate(fb.created_at)
